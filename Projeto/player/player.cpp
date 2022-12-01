@@ -18,6 +18,19 @@ using namespace std;
 string received;
 
 
+/*TODO
+Esta implementação está errada:
+-- Os argumentos -n e -p são opcionais (o enunciado até comenta o que fazer em caso de omissão)
+-- Os argumentos -n e -p não têm de aparecer nesta ordem específica, e pode aparecer só um de ambos
+ Com esta implementação no caso de não passarem argumentos, ou passarem de outra forma sem
+ser a única que foi prevista nesta função, que sao possibilidade válidas,
+a função vai devolver um vector<string> que nem sequer está iniciado, e se o resto do código
+depender desta informação, vai falhar.
+
+Isto já não é um erro, mas tenho ideia de que é boa práctica e mais confortável usar
+libraries que já façam o que pretendes. Getopt trata dos argumentos da linha de comando,
+se calhar dá-te jeito usar, mas tb podes criar a tua própria função se preferires.
+*/
 vector<string> get_data_command(char** command)
 {
     vector<string> v;
@@ -31,6 +44,9 @@ vector<string> get_data_command(char** command)
     return v;
 }
 
+/* Não tenho a certeza, mas acho que cout << v1 << endl; faz o mesmo que esta função,
+caso seja verdade esta função é redundante.
+ */
 void printVector(vector<string> v1)
 {
     for(uint i=0;i<v1.size();i++)
@@ -82,7 +98,7 @@ int main(int argc,char** argv)
     string ip = v[0];
     string port = v[1];
     string player_command;
-    string returned;
+    //string returned; //TODO: variável não usada
     cin >> player_command;
     if(strcmp(player_command.c_str(),"start")==0){
         string message;
