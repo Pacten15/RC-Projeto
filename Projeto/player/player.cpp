@@ -13,40 +13,50 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/wait.h>
+#include <bitset>
 using namespace std;
 
 string received;
 
 
-/*TODO
-Esta implementação está errada:
--- Os argumentos -n e -p são opcionais (o enunciado até comenta o que fazer em caso de omissão)
--- Os argumentos -n e -p não têm de aparecer nesta ordem específica, e pode aparecer só um de ambos
- Com esta implementação no caso de não passarem argumentos, ou passarem de outra forma sem
-ser a única que foi prevista nesta função, que sao possibilidade válidas,
-a função vai devolver um vector<string> que nem sequer está iniciado, e se o resto do código
-depender desta informação, vai falhar.
-
-Isto já não é um erro, mas tenho ideia de que é boa práctica e mais confortável usar
-libraries que já façam o que pretendes. Getopt trata dos argumentos da linha de comando,
-se calhar dá-te jeito usar, mas tb podes criar a tua própria função se preferires.
-*/
-vector<string> get_data_command(char** command)
+int get_number_of_elements(char ** argument)
 {
     vector<string> v;
-    if(strcmp(string(command[1]).c_str(),"-n")==0 && strcmp(string(command[3]).c_str(),"-p")==0)
-    {
-        string ip = string(command[2]);
-        string port = string(command[4]);
-        v.push_back(ip);
-        v.push_back(port); 
-    }
-    return v;
+    int i=0;
+    while(argument[i] != NULL)
+        i++;
+    return i;
 }
 
-/* Não tenho a certeza, mas acho que cout << v1 << endl; faz o mesmo que esta função,
-caso seja verdade esta função é redundante.
- */
+vector<string> parse_string(string s)
+{
+    vector<string> result;
+    string delimita = " ";
+    size_t pointer = 0;
+    string sub_s;
+    while((pointer = s.find(delimita))!= std::string::npos)
+    {
+        sub_s = s.substr(0,pointer);
+        result.push_back(sub_s);
+        s.erase(0,pointer + delimita.length());
+        
+    }
+    s.erase(s.length()-1,1);
+    result.push_back(s);
+    return result;
+}
+
+string draw_board(int n)
+{
+    string board;
+    for(int i=0;i<n;i++)
+    {
+        board.append("_ ");
+    }
+    return board;
+}
+
+
 void printVector(vector<string> v1)
 {
     for(uint i=0;i<v1.size();i++)
@@ -56,6 +66,52 @@ void printVector(vector<string> v1)
     }
     cout << '\n';
 }
+
+vector<string> get_data_command(char** command)
+{
+    string ip;
+    string port;
+    vector<string> res;
+    if(get_number_of_elements(command)==5)
+    {
+        if(strcmp(string(command[1]).c_str(),"-n")==0 && strcmp(string(command[3]).c_str(),"-p")==0)
+        {
+            ip = string(command[2]);
+            port = string(command[4]);
+        }
+    }
+    else if(get_number_of_elements(command)== 3)
+    {
+        if(strcmp(string(command[1]).c_str(),"-n")==0)
+        {
+            ip = string(command[2]);
+            port = "58011";
+            
+
+        }
+        if(strcmp(string(command[1]).c_str(),"-p")==0)
+        {
+            char buffer2[128];
+            gethostname(buffer2,128);
+            ip = string(buffer2);
+            port = string(command[2]);
+
+        }
+    }
+    else
+    {
+        char buffer2[128];
+        gethostname(buffer2,128);
+        ip = string(buffer2);
+        port = "58011";
+
+    }
+    res.push_back(ip);
+    res.push_back(port);
+    return res;
+}
+
+
 
 void send_to_udp_server(string message,string port,string ip)
 {
@@ -94,11 +150,11 @@ void send_to_udp_server(string message,string port,string ip)
 
 int main(int argc,char** argv)
 {
-    vector<string> v = get_data_command(argv);
-    string ip = v[0];
-    string port = v[1];
+    vector<string> id_port = get_data_command(argv);
+    string ip = id_port[0];
+    string port = id_port[1];
     string player_command;
-    //string returned; //TODO: variável não usada
+    string returned;
     cin >> player_command;
     if(strcmp(player_command.c_str(),"start")==0){
         string message;
@@ -108,9 +164,14 @@ int main(int argc,char** argv)
         message_to_send.append(message);
         message_to_send.append("\n");
         send_to_udp_server(message_to_send,port,ip);
+        vector<string> game_settings = parse_string(received);
+        string board = draw_board(stoi(game_settings[2]));
+        cout << "New game started (max ";
+        cout << game_settings[3];
+        cout << " errors): ";
+        cout << board;
+        cout << "\n";
     }
-
-
     return 0;
 }
 
