@@ -1,10 +1,4 @@
-#include <unistd.h>
-#include <stdlib.h>
-#include <iostream>
-
-#define GN 3
-
-using namespace std;
+#include "server.h"
 
 bool verbose = false;
 
@@ -36,15 +30,27 @@ void commandlinearguments (int argc, char** argv, char** word_file_name, char** 
 
 }
 
+void init_server (char* GSport, char* word_file_name) {
+
+	if ( fork() == 0 ) {
+		// UDP
+		init_gamechannel(GSport, word_file_name);
+	} else {
+		//TCP
+		init_messagingchannel(GSport);
+	}
+
+	return;
+}
+
 int main (int argc, char** argv) {
 
 	char* GSport = new char[6];
 	char* word_file_name = NULL;
 
 	commandlinearguments(argc, argv, &word_file_name, &GSport);
-	cout << word_file_name <<endl;
-	cout << GSport << endl;
-	cout << verbose << endl;
+
+	init_server(GSport, word_file_name);
 
 	return 0;
 
