@@ -67,6 +67,9 @@ void printVector(vector<string> v1)
     cout << '\n';
 }
 
+/* TODO
+ * Continua sem contemplar a opção do -p ser chamado antes que o -n
+ */
 vector<string> get_data_command(char** command)
 {
     string ip;
