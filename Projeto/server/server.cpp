@@ -14,7 +14,7 @@ void commandlinearguments (int argc, char** argv, char** word_file_name, char** 
 
 	sprintf(*GSport, "%d", 58000+GN);
 
-	while ( opt = getopt(argc, argv, "p:v") != -1 ) {
+	while ( (opt = getopt(argc, argv, "p:v")) != -1 ) {
 		switch (opt) {
 			case 'p':
 				cout << optarg << endl;
