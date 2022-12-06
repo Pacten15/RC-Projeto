@@ -14,6 +14,9 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <bitset>
+
+#define GN 30
+
 using namespace std;
 
 string received;
@@ -70,48 +73,35 @@ void printVector(vector<string> v1)
 /* TODO
  * Continua sem contemplar a opção do -p ser chamado antes que o -n
  */
-vector<string> get_data_command(char** command)
+vector<string> get_data_command(int argc, char** argv)
 {
+
+	int opt;
     string ip;
-    string port;
+	char port[6];
     vector<string> res;
-    if(get_number_of_elements(command)==5)
-    {
-        if(strcmp(string(command[1]).c_str(),"-n")==0 && strcmp(string(command[3]).c_str(),"-p")==0)
-        {
-            ip = string(command[2]);
-            port = string(command[4]);
-        }
-    }
-    else if(get_number_of_elements(command)== 3)
-    {
-        if(strcmp(string(command[1]).c_str(),"-n")==0)
-        {
-            ip = string(command[2]);
-            port = "58011";
-            
 
-        }
-        if(strcmp(string(command[1]).c_str(),"-p")==0)
-        {
-            char buffer2[128];
-            gethostname(buffer2,128);
-            ip = string(buffer2);
-            port = string(command[2]);
+	sprintf(port, "%d", 58000+GN);
 
-        }
-    }
-    else
-    {
-        char buffer2[128];
-        gethostname(buffer2,128);
-        ip = string(buffer2);
-        port = "58011";
+	char buffer[128];
+	gethostname(buffer,128);
+	ip = string(buffer);
 
-    }
+	while ( (opt = getopt(argc, argv, "p:n:")) != -1 ) {
+		switch (opt) {
+			case 'p':
+				strncpy(port, optarg, 5);
+				break;
+			case 'n':
+				ip = optarg;
+				break;
+		}
+	}
+	
     res.push_back(ip);
     res.push_back(port);
-    return res;
+	return res;
+
 }
 
 
@@ -153,7 +143,7 @@ void send_to_udp_server(string message,string port,string ip)
 
 int main(int argc,char** argv)
 {
-    vector<string> id_port = get_data_command(argv);
+    vector<string> id_port = get_data_command(argc, argv);
     string ip = id_port[0];
     string port = id_port[1];
     string player_command;

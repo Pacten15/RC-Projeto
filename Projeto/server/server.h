@@ -15,7 +15,7 @@
 #include "gamechannel.h"
 #include "messagingchannel.h"
 
-#define GN 3
+#define GN 30
 
 using namespace std;
 
