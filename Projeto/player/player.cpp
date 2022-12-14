@@ -257,7 +257,7 @@ int receive_file_From_Server(char buffer)
 **/
 
 
-void process_response(string message_retrived)
+void process_response_scoreboard(string message_retrived)
 {
     vector<string> parsed_message = parse_string(message_retrived);
     string file_name = parsed_message[3];
@@ -332,21 +332,52 @@ string send_to_tcp_server(string message,string port,string ip)
         n_left -= n_written;
         ptr += n_written;
     }
-
-    /*Read data from the server to the player*/
     string received_message = "";
-    while(true){
-        n_read = read(fd,buffer,4);
-        if(n_read==-1){
-            printf("Erro de Leitura\n");
-            exit(1);
+    /*Read data from the server to the player*/
+    if(strcmp(message.c_str(),"GSB\n")==0)
+    {
+        while(true){
+            n_read = read(fd,buffer,4);
+            if(n_read==-1){
+                printf("Erro de Leitura\n");
+                exit(1);
+            }
+            else if(n_read == 0 || n_read == EOF)
+                break;
+            else
+            {
+                received_message.append(buffer);
+            }
         }
-        else if(n_read == 0 || n_read == EOF)
-            break;
-        else
-            received_message.append(buffer);
     }
-    n_read = n_bytes - n_left;
+    vector<string> parse_message = parse_string(message);
+    string received_part_message = "";
+    if(strcmp(parse_message[0].c_str(),"GHL")==0)
+    {
+        /**Ler parte inicial da mensagem com o nome do ficheirp e o seu tamanho*/
+        n_left=32;
+        ptr = buffer;
+        while(true)
+        {  
+            n_read = read(fd,ptr,n_left);
+            if(n_read==-1){
+                printf("Erro de Leitura\n");
+                exit(1);
+            }
+            else if(n_read == 0 || n_read == EOF)
+                break;
+            else
+            {
+                received_part_message.append(buffer);
+            }
+            vector<string> received_part_message_parse = parse_string(received_part_message);
+            if(receivedreceived_part_message_parse[3])
+            n_left -= n_read;
+            ptr += n_read;
+        }
+        vector<string> parsed_received_message = parse_string(received_message);
+
+    }
     freeaddrinfo(res);
     close(fd);
     return received_message;
@@ -500,6 +531,7 @@ int main(int argc,char** argv)
             send_to_udp_server(message_to_send,port,ip);
             player_command = "";
             board = "";
+            player_id = "";
             cout << "game quit\n";
             num_trials = 1;
             vector<string> exit_quit_result = parse_string(received_udp);
@@ -546,7 +578,16 @@ int main(int argc,char** argv)
              string message_to_send = "GSB\n";
              string message_received = send_to_tcp_server(message_to_send,port,ip);
              player_command = "";
-             process_response(message_received);
+             process_response_scoreboard(message_received);
+        }
+        else if(strcmp(player_command.c_str(),"hint")==0 || strcmp(player_command.c_str(),"h")==0)
+        {
+            string message = "GHL";
+            string message_to_send = format_message("GHL",player_id);
+            string message_received = send_to_tcp_server(message_to_send,port,ip);
+            player_command = "";
+            cout << message_received << "\n";
+            cout << message_received
         }
 
 
