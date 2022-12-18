@@ -1,3 +1,4 @@
+
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -40,6 +41,27 @@ string format_result(string result)
       f_result.push_back(' ');
     }
     return f_result;
+}
+
+string all_string_upper(string s)
+{
+    string s_result;
+    for(int i=0;i<s.size();i++)
+    {
+      char letter = s[i];
+      s_result.push_back(toupper(letter));
+    }
+    return s_result;
+}
+
+string format_message(string command,string message)
+{
+    string formated_message;
+    formated_message.append(command);
+    formated_message.append(" ");
+    formated_message.append(message);
+    formated_message.append("\n");
+    return formated_message;
 }
 
 
@@ -96,6 +118,21 @@ int count_spaces_on_string(string message)
         }
     }
     return counter;
+}
+
+int find_n_index_of_spaces(string s,int n)
+{
+    int in,counter,index;
+    counter=0;
+    for(in=0;in<s.size();in++)
+    {
+        if(s[in] == ' '){
+            counter++;
+        }
+        if(counter == n)
+            break;
+    }
+    return in;
 }
 
 //*Board Manipulation*//
@@ -211,15 +248,7 @@ vector<string> get_data_command(char** command)
     return res;
 }
 
-string format_message(string command,string message)
-{
-    string formated_message;
-    formated_message.append(command);
-    formated_message.append(" ");
-    formated_message.append(message);
-    formated_message.append("\n");
-    return formated_message;
-}
+
 
 
                                                                        
@@ -250,46 +279,65 @@ void send_to_udp_server(string message,string port,string ip)
     addrlen=sizeof(addr);
     n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
     if(n==-1) /*error*/ exit(1);
-    write(1,buffer,n);
-    received_udp = buffer;
 
+    received_udp = buffer;
+    
     freeaddrinfo(res);
     close(fd);
 }
 
 
-
+/******functios to process all the content from a message and afterwards put the data into a file******/
 void process_response_scoreboard(string message_retrived)
 {
-    vector<string> parsed_message = parse_string(message_retrived);
-    string file_name = parsed_message[2];
-    int size_data = stoi(parsed_message[3]);
-    ofstream response_file(file_name);/*Nome do ficheiro*/
-    char buffer2[size_data];/*numero de bytes que o ficheiro tem*/
-    int index_begin_file = message_retrived.find('\n')+1;
-    string file_data_not_process = message_retrived.substr(index_begin_file,size_data);
-    const char* data_cos_char = file_data_not_process.data();
-    char* data_char = (char*)data_cos_char;
-    strcpy(buffer2,data_char);
-    response_file << buffer2;
+    if(strcmp(message_retrived.c_str(),"The Scoreboard is Empty\n") != 0){
+        vector<string> parsed_message = parse_string(message_retrived);
+        string file_name = parsed_message[2];
+        int size_data = stoi(parsed_message[3]);
+        ofstream response_file(file_name);/*Nome do ficheiro*/
+        char buffer2[size_data];/*numero de bytes que o ficheiro tem*/
+        int index_begin_file = message_retrived.find('\n')+1;
+        string file_data_not_process = message_retrived.substr(index_begin_file,size_data);
+        const char* data_cos_char = file_data_not_process.data();
+        char* data_char = (char*)data_cos_char;
+        strcpy(buffer2,data_char);
+        response_file << buffer2;
 
-    response_file.close();   
-}
-
-int find_n_index_of_spaces(string s,int n)
-{
-    int in,counter,index;
-    counter=0;
-    for(in=0;in<s.size();in++)
-    {
-        if(s[in] == ' '){
-            counter++;
-        }
-        if(counter == n)
-            break;
+        response_file.close();
+        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
     }
-    return in;
+    else
+        cout << "The Scoreboard is Empty\n";
 }
+
+void process_respose_state(string message_retrived)
+{
+    if(strcmp(message_retrived.c_str(),"The player Has No Associated Games\n") != 0){
+        vector<string> parsed_message = parse_string(message_retrived);
+        string file_data_not_process;
+        string file_name = parsed_message[2];
+        int size_data = stoi(parsed_message[3]);
+        ofstream response_file(file_name);/*Nome do ficheiro*/
+        char buffer2[size_data];/*numero de bytes que o ficheiro tem*/
+        int start_file_index = find_n_index_of_spaces(message_retrived,5);
+        file_data_not_process = message_retrived.substr(start_file_index,size_data);
+        const char* data_cos_char = file_data_not_process.data();
+        char* data_char = (char*)data_cos_char;
+        strcpy(buffer2,data_char);
+        response_file << buffer2;
+        response_file.close();
+        cout << file_data_not_process << "\n";
+        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
+    }
+    else
+        cout << "The player Has No Associated Games\n";
+
+    
+
+}
+
+/**+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 
 
 string send_to_tcp_server(string message,string port,string ip)
@@ -300,6 +348,8 @@ string send_to_tcp_server(string message,string port,string ip)
     socklen_t addrlen;
     struct addrinfo hints,*res;
     struct sockaddr_in addr;
+    vector<string> message_parsed = parse_string(message);
+
     fd=socket(AF_INET,SOCK_STREAM,0); //TCP socket
     if (fd==-1){
         printf("erro ao criar o socket");
@@ -342,110 +392,208 @@ string send_to_tcp_server(string message,string port,string ip)
         ptr += n_written; 
     }
     memset(buffer,0,sizeof(buffer));
+    char buffer_read[128];
     string received_message = "";
     /*Read data from the server to the player*/
     if(strcmp(message.c_str(),"GSB\n")==0)
     {
-        char buffer_in[256];
+        string status;
         while(true){
-            memset(buffer_in,0,sizeof(buffer_in));
-            n_read = read(fd,buffer_in,32);
+            memset(buffer_read,0,sizeof(buffer_read));
+            n_read = read(fd,buffer_read,1);
             if(n_read==-1){
                 printf("Erro de Leitura\n");
                 exit(1);
             }
-            else if(n_read == 0 || n_read == EOF){
-                break;
-            }
             else
             {
-                received_message.append(buffer_in);   
-            }
-        }
-        
-    }
-
-    vector<string> message_parsed = parse_string(message);
-    if(strcmp(message_parsed[0].c_str(),"GHL")==0){
-        char buffer_instr[1];
-        int imag_size;
-        string file_name;
-        while(true)
-        {
-            memset(buffer_instr,0,sizeof(buffer_instr));
-            n_read = read(fd,buffer_instr,1);
-            if(n_read==-1){
-                printf("Erro de Leitura\n");
-                exit(1);
-            }
-            else if(n_read == 0 || n_read == EOF){
-                break;
-            }
-            else
-            {
-                received_message.append(buffer_instr);
-                if(count_spaces_on_string(received_message) == 4)
+                received_message.append(buffer_read);
+                if(count_spaces_on_string(received_message) == 2)
                 {
-                    string file_name_char = received_message.substr(find_n_index_of_spaces(received_message,2)+1,find_n_index_of_spaces(received_message,3)-find_n_index_of_spaces(received_message,2)-1);
-                    string size_imag_char = received_message.substr(find_n_index_of_spaces(received_message,3)+1,find_n_index_of_spaces(received_message,4)-find_n_index_of_spaces(received_message,3)-1);
-                    cout << size_imag_char << "\n";
-                    imag_size = stoi(size_imag_char);
-                    file_name = file_name_char;
+                    status = received_message.substr(find_n_index_of_spaces(received_message,1)+1,find_n_index_of_spaces(received_message,2)-find_n_index_of_spaces(received_message,1)-1);
                     break;
                 }
             }
         }
-        ofstream response_file(file_name);
-        char buffer_imag[imag_size];
-        n_left = imag_size;
-        while(n_left > 0)
+        if(strcmp(status.c_str(),"OK")==0)
         {
-            memset(buffer_imag,0,sizeof(buffer_imag));
-            n_read = read(fd,buffer_imag,128);
-            if(n_read==-1){
-                printf("Erro de Leitura\n");
-                exit(1);
-            }
-            else if(n_read == 0 || n_read == EOF)
-                break;
-            else
-            {
-                response_file << buffer_imag;
-                n_left -= n_read;
-            }
-        } 
-        response_file.close();
-    }
-    /**
-    if(strcmp(message_parsed[0].c_str(),"STA")==0)
-    {
-        char buffer_instr[1];
-        while(true){
-            n_read = read(fd,buffer_instr,1);
-            if(n_read==-1){
-                printf("Erro de Leitura\n");
-                exit(1);
-            }
-            else if(n_read == 0 || n_read == EOF){
-                break;
-            }
-            else if(count_spaces_on_string(received_message) == 2){
-                string first_two_
-            }
-            else
-            {
-                received_message.append(buffer_istr); 
+            while(true){
+                memset(buffer_read,0,sizeof(buffer_read));
+                n_read = read(fd,buffer_read,32);
+                if(n_read==-1){
+                    printf("Erro de Leitura\n");
+                    exit(1);
+                }   
+                else if(n_read == 0 || n_read == EOF)
+                {
+                    break;
+                }
+                else
+                {
+                    received_message.append(buffer_read);
+                }
             }
         }
+        else{
+            received_message = "The Scoreboard is Empty\n";
+        }
+            
+    }
+
+
+    if(strcmp(message_parsed[0].c_str(),"GHL")==0){
+        int imag_size;
+        string file_name;
+        string status;
+        while(true){
+            memset(buffer_read,0,sizeof(buffer_read));
+            n_read = read(fd,buffer_read,1);
+            if(n_read==-1){
+                printf("Erro de Leitura\n");
+                exit(1);
+            }
+            else
+            {
+                received_message.append(buffer_read);
+                if(count_spaces_on_string(received_message) == 2)
+                {
+                    status = received_message.substr(find_n_index_of_spaces(received_message,1)+1,find_n_index_of_spaces(received_message,2)-find_n_index_of_spaces(received_message,1)-1);
+                    break;
+                }
+            }
+        }
+        if(strcmp(status.c_str(),"OK")==0){
+            while(true)
+            {
+                memset(buffer_read,0,sizeof(buffer_read));
+                n_read = read(fd,buffer_read,1);
+                if(n_read==-1){
+                    printf("Erro de Leitura\n");
+                    exit(1);
+                }
+                else if(n_read == 0 || n_read == EOF){
+                    break;
+                }
+                else
+                {
+                    received_message.append(buffer_read);
+                    if(count_spaces_on_string(received_message) == 4)
+                    {
+                        string file_name_char = received_message.substr(find_n_index_of_spaces(received_message,2)+1,find_n_index_of_spaces(received_message,3)-find_n_index_of_spaces(received_message,2)-1);
+                        string size_imag_char = received_message.substr(find_n_index_of_spaces(received_message,3)+1,find_n_index_of_spaces(received_message,4)-find_n_index_of_spaces(received_message,3)-1);
+                        cout << size_imag_char << "\n";
+                        imag_size = stoi(size_imag_char);
+                        file_name = file_name_char;
+                        break;
+                    }
+                }
+            }
+            char buffer_imag[256];
+            ofstream response_file(file_name);
+            int number_to_read_full_buffer = imag_size/1;
+            int number_left = imag_size - (number_to_read_full_buffer*1);
+            for(int i=0;i<number_to_read_full_buffer;i++)
+            {
+                memset(buffer_imag,0,sizeof(buffer_imag));
+                n_read = read(fd,buffer_imag,1);
+                if(n_read==-1){
+                    printf("Erro de Leitura\n");
+                    exit(1);
+                }
+                else if(n_read == 0 || n_read == EOF)
+                    break;
+                else
+                {   
+                    response_file << buffer_imag[0];
+                }
+            }
+            for(int i=0;i<number_left;i++)
+            {
+               memset(buffer_imag,0,sizeof(buffer_imag));
+                n_read = read(fd,buffer_imag,1);
+                if(n_read==-1){
+                    printf("Erro de Leitura\n");
+                    exit(1);
+                }
+                else if(n_read == 0 || n_read == EOF)
+                    break;
+                else
+                {
+                    response_file << buffer_imag[0];
+                } 
+            }
+            response_file.close();
+            cout << "Received Hint File: " << file_name << " (" << imag_size << ")" << "\n";
+            
+        }
+        else 
+            received_message = "Theres No Hint For This Play Session\n";
         
     }
-    **/
 
+
+    if(strcmp(message_parsed[0].c_str(),"STA")==0)
+    {
+        string status;
+        while(true){
+            memset(buffer_read,0,sizeof(buffer_read));
+            n_read = read(fd,buffer_read,1);
+            if(n_read==-1){
+                printf("Erro de Leitura\n");
+                exit(1);
+            }
+            else
+            {
+                received_message.append(buffer_read);
+                if(count_spaces_on_string(received_message) == 2)
+                {
+                    status = received_message.substr(find_n_index_of_spaces(received_message,1)+1,find_n_index_of_spaces(received_message,2)-find_n_index_of_spaces(received_message,1)-1);
+                    break;
+                }
+            }
+        }
+        if(strcmp(status.c_str(),"ACT")==0 || strcmp(status.c_str(),"FIN")==0)
+        {
+            while(true){
+                memset(buffer_read,0,sizeof(buffer_read));
+                n_read = read(fd,buffer_read,32);
+                if(n_read==-1){
+                    printf("Erro de Leitura\n");
+                    exit(1);
+                }   
+                else if(n_read == 0 || n_read == EOF)
+                {
+                    break;
+                }
+                else
+                {
+                    received_message.append(buffer_read);
+                }
+            } 
+        }
+        else
+            received_message = "The player Has No Associated Games\n";
+    }
     freeaddrinfo(res);
     close(fd);
     return received_message;
 }
 
+
+void instructions()
+{
+    cout << "                   GAME INSTRUCTIONS                   \n\n";
+    cout << "write start or sg           -> start a game\n";
+    cout << "write play or pl + a letter -> guess a letter from the game word\n";
+    cout << "write guess or sw + a word  -> guess the word from the game\n";
+    cout << "write rev                   -> reveal the word and end game\n";
+    cout << "write scoreboard or sb      -> Sends text file with the 10-top scores of the game\n";
+    cout << "write hit or h              -> help to guess the word by a image file\n";
+    cout << "write state or st           -> get state of the current game\n";   
+    cout << "write quit                  -> terminate ongoing game\n";
+    cout << "write exit                  -> terminates program and a possible ongoing game\n"; 
+    
+}
 
 
 int main(int argc,char** argv)
@@ -458,6 +606,9 @@ int main(int argc,char** argv)
     string board;
     int end_player = 0;
     int num_trials=1;
+    int num_error=0;
+    int max_errors;
+    instructions();
     while(end_player == 0)
     {
         //************************************************************** UDP INTERACTION******************************************************//
@@ -470,11 +621,13 @@ int main(int argc,char** argv)
             vector<string> game_settings = parse_string(received_udp);
             if(strcmp(game_settings[0].c_str(),"RSG")==0 && strcmp(game_settings[1].c_str(),"OK")==0)
                 board = draw_board(stoi(game_settings[2]));
+                max_errors = stoi(game_settings[3]);
                 cout << "New game started (max ";
-                cout << stoi(game_settings[3]);
+                cout << max_errors;
                 cout << " errors): ";
-                cout << board;
-                cout << "\n";
+                cout << board << "\n";
+                cout << "Trial: " << num_trials - 1 << "\n";
+                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n";
         }
         else if(strcmp(player_command.c_str(),"play")==0 || strcmp(player_command.c_str(),"pl")==0){
             string letter;
@@ -496,19 +649,32 @@ int main(int argc,char** argv)
                 cout << "Yes, ";
                 cout << letter;
                 cout << " is part of the word: ";
-                cout << board;
-                cout << "\n";
+                cout << board << "\n";
+                cout << "Trial: " << num_trials - 1 << "\n";
+                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n";
+
+            }
+            else if(strcmp(board_possibl_mod[1].c_str(),"NOK")==0)
+            {
+                num_error++;
+                cout << "The Letter Does Not Belong To The Word: "<< max_errors - num_error << " Allowable Errors\n";
+                cout << board << "\n";
+                cout << "Trial Number: " << num_trials-1 << "\n";
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"WIN")==0)
             {
                 board = fill_board(board,letter);
                 cout << "WELL DONE! You Guessed: ";
-                cout << board;
+                num_trials = 1;
+                num_error=0;
+                max_errors=0;
+                cout << all_string_upper(board);
                 cout << " \n";
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"DUP")==0)
             {
                 cout << "The Letter Was Already Sent\n";
+                cout << board << "\n";
                 num_trials--;
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"OVR")==0)
@@ -522,7 +688,7 @@ int main(int argc,char** argv)
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"ERR")==0)
             {
-                cout << "Incorrect Message Syntax or Invalid Player Id or This Player ID has No Ongoing Game\n";
+                cout << "Incorrect Message Syntax or Invalid Player Id or This Player ID Has No Ongoing Game\n";
                 num_trials--;
             }
         }
@@ -546,16 +712,23 @@ int main(int argc,char** argv)
             {
                 cout << "WELL DONE! YOU GUESSED: ";
                 cout << format_result(word);
+                num_trials = 1;
+                num_error = 0;
+                max_errors = 0;
                 cout << "\n";
             }
             else if(strcmp(possibl_guess[1].c_str(),"NOK")==0)
             {
-                cout << "Wrong Guess\n Still Guesseble\n";
+                num_error++;
+                cout << "Wrong Guess: " << max_errors - num_error << " Allowable Errors\n";
+                cout << "Trial Number: " << num_trials-1 << "\n";
             }
             else if(strcmp(possibl_guess[1].c_str(),"OVR")==0)
             {
                 cout << "Theres No More Trials!!!: GAME OVER\n";
                 num_trials=1;
+                num_error = 0;
+                max_errors = 0;
             }
             else if(strcmp(possibl_guess[1].c_str(),"INV")==0)
             {
@@ -563,7 +736,7 @@ int main(int argc,char** argv)
             }
             else if(strcmp(possibl_guess[1].c_str(),"ERR")==0)
             {
-                cout << "Incorrect Message Syntax or Invalid Player Id or This Player ID has No Ongoing Game\n";
+                cout << "Incorrect Message Syntax or Invalid Player Id or Player ID has No Ongoing Game\n";
                 num_trials--;
             }
         }
@@ -579,8 +752,12 @@ int main(int argc,char** argv)
             } 
             else if(strcmp(status_game_rvl[1].c_str(),"OK")==0)
             {
-                cout << "Terminated An Ongoing Game\n";
+                cout << "Terminated Of An Ongoing Game\n";
                 num_trials = 1;
+                num_error = 0;
+                max_errors = 0;
+                player_id = "";
+                board = "";
             }
             else
             {
@@ -594,7 +771,6 @@ int main(int argc,char** argv)
             send_to_udp_server(message_to_send,port,ip);
             player_command = "";
             cout << "game quit\n";
-            num_trials = 1;
             vector<string> exit_quit_result = parse_string(received_udp);
             if(strcmp(exit_quit_result[1].c_str(),"ERR")==0)
             {
@@ -604,37 +780,37 @@ int main(int argc,char** argv)
             {
                 cout << "Terminated An Ongoing Game\n";
                 num_trials = 1;
+                num_error = 0;
+                max_errors = 0;
                 board = "";
                 player_id = "";
+            }
+            else if(strcmp(exit_quit_result[1].c_str(),"NOK")==0)
+            {
+                cout << "Theres No Ongoing Game To Be Terminated\n";             
             }
         }
        else if(strcmp(player_command.c_str(),"exit")==0)
        {
-        string message_to_send = format_message("QUT","099265");
-        send_to_udp_server(message_to_send,port,ip);
-        player_command = "";
-        vector<string> exit_quit_result = parse_string(received_udp);
-        if(strcmp(exit_quit_result[1].c_str(),"OK")==0)
-        {
-           cout << "Terminated An Ongoing Game\n";
-        } 
-        else if(strcmp(exit_quit_result[1].c_str(),"ERR")==0)
-        {
-            cout << "No Termination Of An Ongoing Game\n";             
+        if(player_id.size() != 0){
+            string message_to_send = format_message("QUT",player_id);
+            send_to_udp_server(message_to_send,port,ip);
+            player_command = "";
+            vector<string> exit_quit_result = parse_string(received_udp);
+            if(strcmp(exit_quit_result[1].c_str(),"OK")==0)
+            {
+                cout << "Terminated An Ongoing Game\n";
+            } 
+            else if(strcmp(exit_quit_result[1].c_str(),"ERR")==0)
+            {
+                cout << "No Termination Of An Ongoing Game\n";             
+            }
+            else if(strcmp(exit_quit_result[1].c_str(),"NOK")==0)
+            {
+                cout << "Theres No Ongoing Game To Be Terminated\n";             
+            }
         }
         end_player = 1;
-       }
-       else if(strcmp(player_command.c_str(),"NC KILLGAME")==0)
-       {
-        string message_to_send = format_message("NC KILLGAME",player_id);
-        send_to_udp_server(message_to_send,port,ip);
-        player_command = "";
-       }
-       else if(strcmp(player_command.c_str(),"NC KILLDIR")==0)
-       {
-         string message_to_send = format_message("NC KILLDIR",player_id);
-         send_to_udp_server(message_to_send,port,ip);
-         player_command = "";
        }
         //******************************************************************TCP INTERACTION*********************************************************//
         else if(strcmp(player_command.c_str(),"scoreboard")==0 || strcmp(player_command.c_str(),"sb")==0)
@@ -650,17 +826,16 @@ int main(int argc,char** argv)
             string message_to_send = format_message("GHL",player_id);
             string message_received = send_to_tcp_server(message_to_send,port,ip);
             player_command = "";
-            int i=0;
-            cout << message_received;
         }
-        /*
         else if(strcmp(player_command.c_str(),"state")==0 || strcmp(player_command.c_str(),"st")==0)
         {
             string message = "STA";
             string message_to_send = format_message("STA",player_id);
             string message_received = send_to_tcp_server(message_to_send,port,ip);
+            player_command = "";
+            process_respose_state(message_received);
         }
-        */
+        
 
 
     }
