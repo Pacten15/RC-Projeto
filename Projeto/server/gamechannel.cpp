@@ -19,7 +19,7 @@ void init_gamechannel (char* GSport, char* word_file_name) {
 			exit(1);
 		}
 
-		process_udp_message(buffer);
+		process_udp_message(buffer, word_file_name);
 
 		n = sendto(fd, buffer, 128, 0,
 				(struct sockaddr*)&addr, addrlen);
@@ -62,7 +62,7 @@ int open_udp_socket (char* GSport) {
 	return fd;
 }
 
-void process_udp_message (char* message) {
+void process_udp_message (char* message, char* word_file_name) {
 
 	int plid;
 	char* aux;
@@ -71,19 +71,17 @@ void process_udp_message (char* message) {
 	static game_info ginfo;
 
 	aux = strchr(message, ' ') + 1;
-	if ( strlen(aux) != 6 ) {
+	plid = stoi(aux, 0, 10);
+	if ( plid < 0 && plid > 999999 ) {
 		plid = -1;
 	} else {
-		plid = stoi(aux, 0, 10);
-		if ( plid >= 0 && plid <= 999999 ) {
-			update_game_info(&ginfo, plid);
-			plid = ginfo.plid;
-		} else {
-			plid = -1;
-		}
+		update_game_info(&ginfo, plid);
+		plid = ginfo.plid;
 	}
 
-	if ( strncmp(message, "SNG", 3) ) {
+	if ( message[0] == 'S' &&
+			message[1] == 'N' && 
+			message[2] == 'G' ) {
 
 		if ( plid < 0 ) {
 			strcpy(message, "RSG NOK\n");
@@ -91,19 +89,30 @@ void process_udp_message (char* message) {
 		}
 		if ( ginfo.plays == -1 ) {
 			fp = fopen(ginfo.game_filename, "w");
-			if ( fp = NULL ) {
+			if ( fp == NULL ) {
 				strcpy(message, "RSG NOK\n");
 				return;
 			}
-			generate_word(&ginfo);
+			generate_word(&ginfo, word_file_name);
+			if ( strcmp(ginfo.word, "\0") == 0 ) {
+				strcpy(message, "RSG NOK\n");
+				fclose(fp);
+				return;
+			}
 			fprintf(fp, "%s %s\n", ginfo.word, ginfo.file);
 			ginfo.plays = 0;
+			fclose(fp);
+		} else if ( ginfo.plays > 0 ) {
+			strcpy(message, "RSG NOK\n");
+			return;
 		}
 
-		sprintf(message, "RSG OK %ld %d\n", strlen(ginfo.word)-1, ginfo.max_errors);
+		sprintf(message, "RSG OK %ld %d\n", strlen(ginfo.word), ginfo.max_errors);
 		return;
 
-	} else if ( strncmp(message, "PLG", 3) ) {
+	} else if ( message[0] == 'P' &&
+			message[1] == 'L' &&
+			message[2] == 'G' ) {
 
 		char letter;
 
@@ -149,7 +158,7 @@ void process_udp_message (char* message) {
 
 			flag = 1;
 			for ( int i = 0; i < strlen(ginfo.word); i++ ) {
-				if ( ginfo.word[i] == 0 ) {
+				if ( ginfo.letter_guesses[i] == 0 ) {
 					flag = 0;
 					break;
 				}
@@ -160,7 +169,7 @@ void process_udp_message (char* message) {
 				fprintf(fp, "T %c\n", letter);
 				fclose(fp);
 				sprintf(message, "RLG WIN %d\n", ginfo.plays);
-				archive_game(ginfo.game_filename);
+				archive_game(&ginfo, 'W');
 				return;
 			} else {
 				// OK
@@ -196,13 +205,15 @@ void process_udp_message (char* message) {
 			} else {
 				// OVR
 				sprintf(message, "RLG OVR %d\n", ginfo.plays);
-				archive_game(ginfo.game_filename);
+				archive_game(&ginfo, 'F');
 			}
 
 		}
 		fclose(fp);
 
-	} else if ( strncmp(message, "PWG", 3) ) {
+	} else if ( message[0] == 'P' &&
+			message[1] == 'W' &&
+			message[2] == 'G' ) {
 		//PWG plid word trial
 		//RWG status trial
 
@@ -223,7 +234,7 @@ void process_udp_message (char* message) {
 		flag = stoi(aux, 0, 10);
 		if ( flag != ginfo.plays ) {
 			// INV
-			sprintf(message, "RLG INV %d\n", ginfo.plays);
+			sprintf(message, "RWG INV %d\n", ginfo.plays);
 			return;
 		}
 
@@ -235,7 +246,7 @@ void process_udp_message (char* message) {
 			sprintf(message, "RWG WIN %d\n", ginfo.plays);
 			fprintf(fp, "G %s\n", ginfo.word);
 			fclose(fp);
-			archive_game(ginfo.game_filename);
+			archive_game(&ginfo, 'W');
 			return;
 		} else {
 
@@ -243,7 +254,7 @@ void process_udp_message (char* message) {
 			if ( ginfo.errors < ginfo.max_errors ) {
 				// NOK
 				sprintf(message, "RWG NOK %d\n", ginfo.plays);
-				fprintf(fp, "G %s\n", ginfo.word);
+				fprintf(fp, "G %s\n", wordguess);
 				fclose(fp);
 				return;
 			} else {
@@ -251,23 +262,27 @@ void process_udp_message (char* message) {
 				sprintf(message, "RWG OVR %d\n", ginfo.plays);
 				fprintf(fp, "G %s\n", ginfo.word);
 				fclose(fp);
-				archive_game(ginfo.game_filename);
+				archive_game(&ginfo, 'F');
 				return;
 			}
 
 		}
 
-	} else if ( strncmp(message, "QUT", 3) ) {
+	} else if ( message[0] == 'Q' &&
+			message[1] == 'U' &&
+			message[2] == 'T' ) {
 		
 		if ( plid < 0 ) {
 			strcpy(message, "RQT ERR\n");
 			return;
 		}
-		archive_game(ginfo.game_filename);
+		archive_game(&ginfo, 'Q');
 		strcpy(message, "RQT OK\n");
 		return;
 
-	} else if ( strncmp(message, "REV", 3) ) {
+	} else if ( message[0] == 'R' &&
+			message[1] == 'E' &&
+			message[2] == 'V' ) {
 		
 		if ( plid < 0 ) {
 			strcpy(message, "RRV ERR\n");
@@ -300,7 +315,6 @@ void update_game_info (game_info* ginfo, int plid) {
 		for ( int i = 0; i < 32; i++ ) {
 			ginfo->letter_guesses[i] = 0;
 		}
-		ginfo->plid = -1;
 		return;
 	}
 
@@ -354,10 +368,94 @@ bool check_letter (char* word, char letter) {
 	return false;
 }
 
-void archive_game (char* filename) {
+void archive_game (game_info* ginfo, const char code) {
+
+	char buffer[128];
+	sprintf(buffer, "GAMES/%06d", ginfo->plid);
+	struct stat st = {0};
+	if ( stat(buffer, &st) == -1 ) {
+		mkdir(buffer, 0700);
+	}
+
+	time_t now = time(0);
+	tm *ltm = localtime(&now);
+
+	sprintf(buffer, "GAMES/%06d/%04d%02d%02d_%02d%02d%02d_%c",
+			ginfo->plid,
+			1900+ltm->tm_year, ltm->tm_mon, ltm->tm_mday,
+			ltm->tm_hour, ltm->tm_min, ltm->tm_sec,
+			code);
+
+	rename(ginfo->game_filename, buffer);
+
+	if ( code == 'W' ) {
+
+		int score;
+		if ( ginfo->plays != 0 ) {
+			score = ( (ginfo->plays - ginfo->errors) / ginfo->plays ) * 100;
+		} else {
+			score = 0;
+		}
+
+		sprintf(buffer, "SCORES/%03d_%06d_%04d%02d%02d_%02d%02d%02d",
+				score, ginfo->plid,
+				1900+ltm->tm_year, ltm->tm_mon, ltm->tm_mday,
+				ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+
+		FILE* fp = fopen (buffer, "w");
+		if ( fp == NULL ) {
+			//TODO;
+		}
+
+		fprintf(fp, "%03d %06d %s %d %d", 
+				score, ginfo->plid, ginfo->word,
+				ginfo->plays-ginfo->errors, ginfo->plays);
+		fclose(fp);
+
+	}
+
 	return;
 }
 
-void generate_word (game_info* ginfo) {
+void generate_word (game_info* ginfo, char* word_file_name) {
+
+	int n = 0;
+	FILE* fp = NULL;
+
+	fp = fopen(word_file_name, "r");
+	if ( fp == NULL ) {
+		strcpy(ginfo->word, "\0");
+	}
+
+	char* buffer = new char[64];
+
+	while ( fgets(buffer, 64, fp) != NULL ) {
+		n++;
+	}
+
+	time_t t;
+	srand(time(&t));
+	n = rand() % n + 1;
+
+	rewind(fp);
+	for ( int i = 0; i < n; i++ ) {
+		fgets(buffer, 64, fp);
+	}
+
+	char* word = strsep(&buffer, " ");
+	strcpy(ginfo->word, word);
+	char* file = strsep(&buffer, "\n");
+	strcpy(ginfo->file, file);
+
+	delete[] word;
+
+	if ( (strlen(ginfo->word)-1) <= 6 ) {
+		ginfo->max_errors = 7;
+	} else if ( (strlen(ginfo->word)-1) >= 7 && (strlen(ginfo->word)-1) <= 10 ) {
+		ginfo->max_errors = 8;
+	} else {
+		ginfo->max_errors = 9;
+	}
+
 	return;
 }

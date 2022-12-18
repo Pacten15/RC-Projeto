@@ -5,12 +5,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
+#include <time.h>
+#include <ctime>
+#include <fstream>
 
 #include "gamechannel.h"
 #include "messagingchannel.h"

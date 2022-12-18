@@ -24,3 +24,6 @@ $(TARGET): $(OBJS) Makefile
 # para forçar recompilação, dar o comando "make clean" e depois "make" ou o comando "make clean ; make"
 clean:
 	rm -f *.o
+
+rm:
+	rm SCORES/*; rm -rf GAMES/*;
