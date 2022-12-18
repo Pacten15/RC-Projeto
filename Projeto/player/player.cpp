@@ -305,6 +305,8 @@ void process_response_scoreboard(string message_retrived)
 
         response_file.close();
         cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
+        cout << file_data_not_process;
+        
     }
     else
         cout << "The Scoreboard is Empty\n";
@@ -326,8 +328,8 @@ void process_respose_state(string message_retrived)
         strcpy(buffer2,data_char);
         response_file << buffer2;
         response_file.close();
-        cout << file_data_not_process << "\n";
-        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n\n";
+        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
+        cout << file_data_not_process << "\n\n";
     }
     else
         cout << "The player Has No Associated Games\n\n";
@@ -604,6 +606,7 @@ int main(int argc,char** argv)
     string player_command;
     string player_id;
     string board;
+    string previous_player_id;
     int end_player = 0;
     int num_trials=1;
     int num_error=0;
@@ -783,7 +786,9 @@ int main(int argc,char** argv)
                 num_error = 0;
                 max_errors = 0;
                 board = "";
+                previous_player_id = player_id;
                 player_id = "";
+
             }
             else if(strcmp(exit_quit_result[1].c_str(),"NOK")==0)
             {
@@ -830,7 +835,11 @@ int main(int argc,char** argv)
         else if(strcmp(player_command.c_str(),"state")==0 || strcmp(player_command.c_str(),"st")==0)
         {
             string message = "STA";
-            string message_to_send = format_message("STA",player_id);
+            string message_to_send;
+            if(player_id.size() != 0)
+               message_to_send = format_message("STA",player_id);
+            else
+                message_to_send = format_message("STA",previous_player_id);
             string message_received = send_to_tcp_server(message_to_send,port,ip);
             player_command = "";
             process_respose_state(message_received);
