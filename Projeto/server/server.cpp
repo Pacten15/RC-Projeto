@@ -51,6 +51,8 @@ int main (int argc, char** argv) {
 	commandlinearguments(argc, argv, &word_file_name, &GSport);
 
 	init_server(GSport, word_file_name);
+	
+	open_udp_socket(GSport);
 
 	return 0;
 
