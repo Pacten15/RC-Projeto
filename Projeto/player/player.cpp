@@ -327,10 +327,10 @@ void process_respose_state(string message_retrived)
         response_file << buffer2;
         response_file.close();
         cout << file_data_not_process << "\n";
-        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
+        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n\n";
     }
     else
-        cout << "The player Has No Associated Games\n";
+        cout << "The player Has No Associated Games\n\n";
 
     
 
@@ -435,7 +435,7 @@ string send_to_tcp_server(string message,string port,string ip)
             }
         }
         else{
-            received_message = "The Scoreboard is Empty\n";
+            received_message = "The Scoreboard is Empty\n\n";
         }
             
     }
@@ -523,11 +523,11 @@ string send_to_tcp_server(string message,string port,string ip)
                 } 
             }
             response_file.close();
-            cout << "Received Hint File: " << file_name << " (" << imag_size << ")" << "\n";
+            cout << "Received Hint File: " << file_name << " (" << imag_size << ")" << "\n\n";
             
         }
         else 
-            received_message = "Theres No Hint For This Play Session\n";
+            received_message = "Theres No Hint For This Play Session\n\n";
         
     }
 
@@ -591,7 +591,7 @@ void instructions()
     cout << "write hit or h              -> help to guess the word by a image file\n";
     cout << "write state or st           -> get state of the current game\n";   
     cout << "write quit                  -> terminate ongoing game\n";
-    cout << "write exit                  -> terminates program and a possible ongoing game\n"; 
+    cout << "write exit                  -> terminates program and a possible ongoing game\n\n"; 
     
 }
 
@@ -627,7 +627,7 @@ int main(int argc,char** argv)
                 cout << " errors): ";
                 cout << board << "\n";
                 cout << "Trial: " << num_trials - 1 << "\n";
-                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n";
+                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n\n";
         }
         else if(strcmp(player_command.c_str(),"play")==0 || strcmp(player_command.c_str(),"pl")==0){
             string letter;
@@ -651,15 +651,15 @@ int main(int argc,char** argv)
                 cout << " is part of the word: ";
                 cout << board << "\n";
                 cout << "Trial: " << num_trials - 1 << "\n";
-                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n";
+                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n\n";
 
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"NOK")==0)
             {
                 num_error++;
                 cout << "The Letter Does Not Belong To The Word: "<< max_errors - num_error << " Allowable Errors\n";
-                cout << board << "\n";
-                cout << "Trial Number: " << num_trials-1 << "\n";
+                cout << "Current Board: " << board << "\n";
+                cout << "Trial Number: " << num_trials-1 << "\n\n";
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"WIN")==0)
             {
@@ -674,12 +674,12 @@ int main(int argc,char** argv)
             else if(strcmp(board_possibl_mod[1].c_str(),"DUP")==0)
             {
                 cout << "The Letter Was Already Sent\n";
-                cout << board << "\n";
+                cout << "Current Board: " << board << "\n\n";
                 num_trials--;
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"OVR")==0)
             {
-                cout << "Theres No More Trials!!!: GAME OVER\n";
+                cout << "Theres No More Trials!!!: GAME OVER\n\n";
                 num_trials = 1;
             }
             else if(strcmp(board_possibl_mod[1].c_str(),"INV")==0)
@@ -721,7 +721,7 @@ int main(int argc,char** argv)
             {
                 num_error++;
                 cout << "Wrong Guess: " << max_errors - num_error << " Allowable Errors\n";
-                cout << "Trial Number: " << num_trials-1 << "\n";
+                cout << "Trial Number: " << num_trials-1 << "\n\n";
             }
             else if(strcmp(possibl_guess[1].c_str(),"OVR")==0)
             {
@@ -732,11 +732,11 @@ int main(int argc,char** argv)
             }
             else if(strcmp(possibl_guess[1].c_str(),"INV")==0)
             {
-                cout << "Sent Wrong Trial Number !!!\n";
+                cout << "Sent Wrong Trial Number !!!\n\n";
             }
             else if(strcmp(possibl_guess[1].c_str(),"ERR")==0)
             {
-                cout << "Incorrect Message Syntax or Invalid Player Id or Player ID has No Ongoing Game\n";
+                cout << "Incorrect Message Syntax or Invalid Player Id or Player ID has No Ongoing Game\n\n";
                 num_trials--;
             }
         }
@@ -748,11 +748,11 @@ int main(int argc,char** argv)
             vector<string> status_game_rvl = parse_string(received_udp);
             if(strcmp(status_game_rvl[1].c_str(),"ERR")==0)
             {
-                cout << "No Termination Of An Ongoing Game\n";  
+                cout << "No Termination Of An Ongoing Game\n\n";  
             } 
             else if(strcmp(status_game_rvl[1].c_str(),"OK")==0)
             {
-                cout << "Terminated Of An Ongoing Game\n";
+                cout << "Terminated Of An Ongoing Game\n\n";
                 num_trials = 1;
                 num_error = 0;
                 max_errors = 0;
@@ -774,11 +774,11 @@ int main(int argc,char** argv)
             vector<string> exit_quit_result = parse_string(received_udp);
             if(strcmp(exit_quit_result[1].c_str(),"ERR")==0)
             {
-                cout << "No Termination Of An Ongoing Game\n";  
+                cout << "No Termination Of An Ongoing Game\n\n";  
             } 
             else if(strcmp(exit_quit_result[1].c_str(),"OK")==0)
             {
-                cout << "Terminated An Ongoing Game\n";
+                cout << "Terminated An Ongoing Game\n\n";
                 num_trials = 1;
                 num_error = 0;
                 max_errors = 0;
@@ -787,7 +787,7 @@ int main(int argc,char** argv)
             }
             else if(strcmp(exit_quit_result[1].c_str(),"NOK")==0)
             {
-                cout << "Theres No Ongoing Game To Be Terminated\n";             
+                cout << "Theres No Ongoing Game To Be Terminated\n\n";             
             }
         }
        else if(strcmp(player_command.c_str(),"exit")==0)
