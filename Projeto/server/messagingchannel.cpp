@@ -76,7 +76,7 @@ int open_tcp_socket (char* GSport) {
 char* process_tcp_message (char* request) {
 
 	char* reply;
-	char buffer[128];
+	char buffer[512];
 
 	time_t now = time(0);
 	struct tm ltm;
@@ -101,16 +101,16 @@ char* process_tcp_message (char* request) {
 			sprintf(buffer, "%s%03d %s %s %02d %02d\n", fdata,
 					list.score[i], list.PLID[i], list.word[i],
 					list.n_suc[i], list.n_tot[i]);
-			strncpy(fdata, buffer, 127);
+			strncpy(fdata, buffer, 512);
 		}
 		fsize = strlen(fdata);
-		sprintf(buffer, "%d", fsize);
-		int size = 37 + strlen(buffer) + fsize;
 
 		char fname[32];
 		sprintf(fname, "SB_%04d%02d%02d_%02d%02d%02d", 
 				1900+ltm.tm_year, ltm.tm_mon, ltm.tm_mday,
 				ltm.tm_hour, ltm.tm_min, ltm.tm_sec);
+		sprintf(buffer, "RSB OK %s %d ", fname, fsize);
+		int size = strlen(buffer) + fsize;
 
 		reply = (char*) malloc(size*sizeof(char));
 		sprintf(reply, "RSB OK %s %d %s",
