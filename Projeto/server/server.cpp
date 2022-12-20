@@ -50,23 +50,23 @@ int main (int argc, char** argv) {
 
 	commandlinearguments(argc, argv, &word_file_name, &GSport);
 
-	char message[32] = "SNG 100064";
-	process_udp_message(message, word_file_name);
-	cout << message;
-	
-	strcpy(message, "REV 100064");
-	process_udp_message(message, word_file_name);
-	cout << message;
-	
-	strcpy(message, "PWG 100064 hovelcraft 0");
-	process_udp_message(message, word_file_name);
-	cout << message;
-	
-	strcpy(message, "QUT 100064");
-	process_udp_message(message, word_file_name);
-	cout << message;
-	
 	//init_server(GSport, word_file_name);
+
+	char message[32];
+	char* reply;
+
+	strcpy(message, "SNG 123");
+	process_udp_message(message, word_file_name);
+	cout << message;
+	
+	strcpy(message, "PWG 123 pig 0");
+	process_udp_message(message, word_file_name);
+	cout << message;
+	
+	strcpy(message, "GSB");
+	reply = process_tcp_message(message);
+	cout << reply << endl;
+	free(reply);
 	
 	return 0;
 

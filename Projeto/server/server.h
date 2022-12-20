@@ -15,6 +15,7 @@
 #include <time.h>
 #include <ctime>
 #include <fstream>
+#include <dirent.h>
 
 #include "gamechannel.h"
 #include "messagingchannel.h"

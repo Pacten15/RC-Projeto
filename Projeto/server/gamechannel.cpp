@@ -254,7 +254,7 @@ void process_udp_message (char* message, char* word_file_name) {
 			if ( ginfo.errors < ginfo.max_errors ) {
 				// NOK
 				sprintf(message, "RWG NOK %d\n", ginfo.plays);
-				fprintf(fp, "G %s\n", wordguess);
+				fprintf(fp, "G %s\n", ginfo.word);
 				fclose(fp);
 				return;
 			} else {
@@ -378,12 +378,13 @@ void archive_game (game_info* ginfo, const char code) {
 	}
 
 	time_t now = time(0);
-	tm *ltm = localtime(&now);
+	tm ltm;
+	localtime_r(&now, &ltm);
 
 	sprintf(buffer, "GAMES/%06d/%04d%02d%02d_%02d%02d%02d_%c",
 			ginfo->plid,
-			1900+ltm->tm_year, ltm->tm_mon, ltm->tm_mday,
-			ltm->tm_hour, ltm->tm_min, ltm->tm_sec,
+			1900+ltm.tm_year, ltm.tm_mon, ltm.tm_mday,
+			ltm.tm_hour, ltm.tm_min, ltm.tm_sec,
 			code);
 
 	rename(ginfo->game_filename, buffer);
@@ -399,8 +400,8 @@ void archive_game (game_info* ginfo, const char code) {
 
 		sprintf(buffer, "SCORES/%03d_%06d_%04d%02d%02d_%02d%02d%02d",
 				score, ginfo->plid,
-				1900+ltm->tm_year, ltm->tm_mon, ltm->tm_mday,
-				ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+				1900+ltm.tm_year, ltm.tm_mon, ltm.tm_mday,
+				ltm.tm_hour, ltm.tm_min, ltm.tm_sec);
 
 		FILE* fp = fopen (buffer, "w");
 		if ( fp == NULL ) {
@@ -419,15 +420,62 @@ void archive_game (game_info* ginfo, const char code) {
 
 void generate_word (game_info* ginfo, char* word_file_name) {
 
-	int n = 0;
+	char* buffer;
 	FILE* fp = NULL;
+	static int n = 0;
+	static int next_word = 0;
+	static char** word_file = NULL;
 
-	fp = fopen(word_file_name, "r");
-	if ( fp == NULL ) {
-		strcpy(ginfo->word, "\0");
+	if ( word_file == NULL ) {
+
+		buffer = new char[64];
+
+		fp = fopen(word_file_name, "r+");
+		if ( fp == NULL ) {
+			strcpy(ginfo->word, "\0");
+		}
+
+		while ( fgets(buffer, 64, fp) != NULL ) {
+			n++;
+		}
+
+		if ( n > 0 ) {
+			word_file = new char*[n];
+			for ( int i = 0; i < n; i++ ) {
+				word_file[i] = new char[64];
+			}
+		} else {
+			strcpy(ginfo->word, "\0");
+			strcpy(ginfo->file, "\0");
+			delete[] buffer;
+			fclose(fp);
+			return;
+		}
+
+		rewind(fp);
+		for ( int i = 0; i < n; i++ ) {
+			fgets(buffer, 64, fp);
+			strcpy(word_file[i], buffer);
+		}
+
+		delete[] buffer;
+		fclose(fp);
+
 	}
 
-	char* buffer = new char[64];
+	if ( next_word >= n ) {
+		next_word = 0;
+	}
+	buffer = word_file[next_word];
+	char* word = strsep(&buffer, " ");
+	strcpy(ginfo->word, word);
+	char* file = strsep(&buffer, "\n");
+	strcpy(ginfo->file, file);
+	file[strlen(file)] = '\n';
+	*(file-1) = ' ';
+	word_file[next_word++] = word;
+
+	/* Random word selection
 
 	while ( fgets(buffer, 64, fp) != NULL ) {
 		n++;
@@ -446,8 +494,10 @@ void generate_word (game_info* ginfo, char* word_file_name) {
 	strcpy(ginfo->word, word);
 	char* file = strsep(&buffer, "\n");
 	strcpy(ginfo->file, file);
-
+	
 	delete[] word;
+
+	*/
 
 	if ( (strlen(ginfo->word)-1) <= 6 ) {
 		ginfo->max_errors = 7;
