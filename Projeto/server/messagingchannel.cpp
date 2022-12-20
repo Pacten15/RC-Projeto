@@ -76,6 +76,7 @@ int open_tcp_socket (char* GSport) {
 char* process_tcp_message (char* request) {
 
 	char* reply;
+	char buffer[128];
 
 	time_t now = time(0);
 	struct tm ltm;
@@ -93,16 +94,18 @@ char* process_tcp_message (char* request) {
 		}
 
 		int fsize = 0;
-		int size = calculate_replysize(&list, &fsize);
-		
-		char* fdata = new char[fsize+1]();
+		char* fdata = new char[512]();
 		if ( fdata == NULL ) return NULL;
 
 		for ( int i = 0; (i<list.n_scores) && (i<10); i++ ) {
-			sprintf(fdata, "%s%03d %s %s %02d %02d\n", fdata,
+			sprintf(buffer, "%s%03d %s %s %02d %02d\n", fdata,
 					list.score[i], list.PLID[i], list.word[i],
 					list.n_suc[i], list.n_tot[i]);
+			strncpy(fdata, buffer, 127);
 		}
+		fsize = strlen(fdata);
+		sprintf(buffer, "%d", fsize);
+		int size = 37 + strlen(buffer) + fsize;
 
 		char fname[32];
 		sprintf(fname, "SB_%04d%02d%02d_%02d%02d%02d", 
@@ -113,9 +116,7 @@ char* process_tcp_message (char* request) {
 		sprintf(reply, "RSB OK %s %d %s",
 				fname, fsize, fdata);
 
-		char path[40];
-		sprintf(path, "SCORES/%s", fname);
-		FILE* fp = fopen(path, "w");
+		FILE* fp = fopen(fname, "w");
 		fprintf(fp, "%s", fdata);
 		delete[] fdata;
 		fclose(fp);
@@ -139,6 +140,16 @@ int find_top_scores (scorelist* list) {
 	int n_entries, i_file;
 	FILE* fp = NULL;
 	char fname[300];
+
+	list->score = new int[10];
+	list->n_suc = new int[10];
+	list->n_tot = new int[10];
+	list->PLID = new char*[10];
+	list->word = new char*[10];
+	for ( int i = 0; i < 10; i++ ) {
+		list->PLID[i] = new char[16];
+		list->word[i] = new char[32];
+	}
 
 	n_entries = scandir("SCORES/", &filelist, 0, alphasort);
 
@@ -174,29 +185,4 @@ int find_top_scores (scorelist* list) {
 	list->n_scores = i_file;
 	return i_file;
 
-}
-
-int calculate_replysize (scorelist* list, int* fsize) {
-	
-	int rsize = 0;
-	char buffer[32];
-
-	for ( int i = 0; (i < list->n_scores) && (i < 10); i++ ) {
-		rsize += 3 + 1 + // score
-			strlen(list->word[i]) + 1 + // PLID
-			strlen(list->word[i]) + 1 + // word
-			2 + 1 + // n_suc
-			2 + 1 + // n_tot
-			1; // \n
-	}
-	*fsize = rsize;
-
-	sprintf(buffer, "%d", *fsize);
-
-	fsize += 3 + 1 + // RSB
-		2 + 1 + // OK
-		18 + 1 + // Fname(SB_YYYYMMDD_HHMMSS)
-		strlen(buffer) + 1; // Fsize
-
-	return rsize;
 }
