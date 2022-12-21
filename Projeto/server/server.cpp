@@ -50,8 +50,9 @@ int main (int argc, char** argv) {
 
 	commandlinearguments(argc, argv, &word_file_name, &GSport);
 
-	//init_server(GSport, word_file_name);
+	init_server(GSport, word_file_name);
 
+	/*
 	char message[256][2];
 	int i = 0;
 
@@ -80,19 +81,19 @@ int main (int argc, char** argv) {
 				break;
 			case 5:
 				message[0][0] = 'U';
-				strcpy(message[1], "PLG 1 r 4\n");
+				strcpy(message[1], "SNG 2\n");
 				break;
 			case 6:
 				message[0][0] = 'U';
-				strcpy(message[1], "PLG 1 b 4\n");
+				strcpy(message[1], "PWG 2 abracadabr 0\n");
 				break;
 			case 7:
 				message[0][0] = 'T';
-				strcpy(message[1], "GSB\n");
+				strcpy(message[1], "GHL 1\n");
 				break;
 			case 8:
 				message[0][0] = 'U';
-				strcpy(message[1], "PWG 1 abracadabra 5\n");
+				strcpy(message[1], "PWG 1 abracadabra 4\n");
 				break;
 			case 9:
 				message[0][0] = 'T';
@@ -121,6 +122,7 @@ int main (int argc, char** argv) {
 
 		}
 	}
+	*/
 
 	return 0;
 

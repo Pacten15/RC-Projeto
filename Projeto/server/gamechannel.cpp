@@ -221,7 +221,7 @@ void process_udp_message (char* message, char* word_file_name) {
 			ginfo.plays++;
 			ginfo.errors++;
 
-			fprintf(fp, "T %s\n", ginfo.word);
+			fprintf(fp, "T %c\n", letter);
 
 			if ( ginfo.errors < ginfo.max_errors ) {
 				// NOK
@@ -243,7 +243,7 @@ void process_udp_message (char* message, char* word_file_name) {
 
 		char wordguess[32];
 
-		if ( plid < 0 ) {
+		if ( plid < 0 || ginfo.plays < 0 ) {
 			strcpy(message, "RWG ERR\n");
 			return;
 		}
@@ -435,7 +435,7 @@ void archive_game (game_info* ginfo, const char code) {
 
 		int score;
 		if ( ginfo->plays != 0 ) {
-			score = ( (ginfo->plays - ginfo->errors) / ginfo->plays ) * 100;
+			score = ( (ginfo->plays - ginfo->errors) * 100 ) / ginfo->plays;
 		} else {
 			score = 0;
 		}
