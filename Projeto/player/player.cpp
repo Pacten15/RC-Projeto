@@ -266,6 +266,7 @@ void send_to_udp_server(string message,string port,string ip)
     size_t message_lenght = message.length();
     const char* port_char = port.c_str();
     const char* ip_char = ip.c_str();
+    cout <<message << "\n";
     fd=socket(AF_INET,SOCK_DGRAM,0); //UDP socket
     if(fd==-1) /*error*/exit(1);
     memset(&hints,0,sizeof hints);
@@ -344,14 +345,13 @@ void process_respose_state(string message_retrived)
 
 string send_to_tcp_server(string message,string port,string ip)
 {
-    extern int errno;
     int fd,errcode,n;
     ssize_t n_bytes,n_left,n_written,n_read;
     socklen_t addrlen;
     struct addrinfo hints,*res;
     struct sockaddr_in addr;
     vector<string> message_parsed = parse_string(message);
-
+    cout << message << "\n";
     fd=socket(AF_INET,SOCK_STREAM,0); //TCP socket
     if (fd==-1){
         printf("erro ao criar o socket");
@@ -483,7 +483,6 @@ string send_to_tcp_server(string message,string port,string ip)
                     {
                         string file_name_char = received_message.substr(find_n_index_of_spaces(received_message,2)+1,find_n_index_of_spaces(received_message,3)-find_n_index_of_spaces(received_message,2)-1);
                         string size_imag_char = received_message.substr(find_n_index_of_spaces(received_message,3)+1,find_n_index_of_spaces(received_message,4)-find_n_index_of_spaces(received_message,3)-1);
-                        cout << size_imag_char << "\n";
                         imag_size = stoi(size_imag_char);
                         file_name = file_name_char;
                         break;
@@ -492,27 +491,17 @@ string send_to_tcp_server(string message,string port,string ip)
             }
             char buffer_imag[256];
             ofstream response_file(file_name);
-            int number_to_read_full_buffer = imag_size/1;
-            int number_left = imag_size - (number_to_read_full_buffer*1);
+            ssize_t bytes_to_read = 128;
+            size_t number_to_read_full_buffer = imag_size/bytes_to_read;
+            cout << number_to_read_full_buffer << "\n";
+            size_t number_left = imag_size - (number_to_read_full_buffer*bytes_to_read);
+            cout << number_left << "\n";
+            int counter = 0;
             for(int i=0;i<number_to_read_full_buffer;i++)
             {
                 memset(buffer_imag,0,sizeof(buffer_imag));
-                n_read = read(fd,buffer_imag,1);
-                if(n_read==-1){
-                    printf("Erro de Leitura\n");
-                    exit(1);
-                }
-                else if(n_read == 0 || n_read == EOF)
-                    break;
-                else
-                {   
-                    response_file << buffer_imag[0];
-                }
-            }
-            for(int i=0;i<number_left;i++)
-            {
-               memset(buffer_imag,0,sizeof(buffer_imag));
-                n_read = read(fd,buffer_imag,1);
+                n_read = read(fd,buffer_imag,bytes_to_read);
+                cout << n_read << "\n";
                 if(n_read==-1){
                     printf("Erro de Leitura\n");
                     exit(1);
@@ -521,9 +510,33 @@ string send_to_tcp_server(string message,string port,string ip)
                     break;
                 else
                 {
-                    response_file << buffer_imag[0];
-                } 
+                    for(int j=0;j<n_read;j++)
+                        response_file << buffer_imag[j];
+                }
+                counter += n_read;
             }
+            if(counter != number_to_read_full_buffer)
+            {
+                char rest[128 + number_to_read_full_buffer*128-counter];
+                n_read = read(fd,rest,number_to_read_full_buffer*128-counter);
+                for(int j=0;j<number_to_read_full_buffer*128-counter;j++)
+                        response_file << rest[j];
+            }
+            if(number_left !=0){
+                n_read = read(fd,buffer_imag,number_left);
+                cout << n_read << "\n";
+                if(n_read==-1){
+                    printf("Erro de Leitura\n");
+                    exit(1);
+                }
+                else
+                {
+                    for(int j=0;j<n_read;j++)
+                        response_file << buffer_imag[j];
+                }
+            }
+            
+            
             response_file.close();
             cout << "Received Hint File: " << file_name << " (" << imag_size << ")" << "\n\n";
             
