@@ -106,7 +106,21 @@ void process_udp_message (char* message, char* word_file_name) {
 				fclose(fp);
 				return;
 			}
+
+			char buffer[128], buffer2[256];
+			strcpy(buffer, word_file_name);
+			aux = strrchr(buffer, '/');
+			if ( aux == NULL ) {
+				strcpy(buffer, "\0");
+			} else {
+				aux++;
+				*aux = '\0';
+			}
+			sprintf(buffer2, "%s%s", buffer, ginfo.file);
+			strncpy(ginfo.file, buffer2, 128);
+			
 			fprintf(fp, "%s %s\n", ginfo.word, ginfo.file);
+
 			ginfo.plays = 0;
 			fclose(fp);
 		} else if ( ginfo.plays > 0 ) {

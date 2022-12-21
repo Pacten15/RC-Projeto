@@ -123,7 +123,7 @@ char* process_tcp_message (char* request) {
 
 	} else if ( request[0] == 'G' &&
 			request[1] == 'H' &&
-			request[2] == 'D' ) {
+			request[2] == 'L' ) {
 
 		char* aux = strchr(request, ' ') + 1; 
 		int plid = stoi(aux, 0, 10);
@@ -160,7 +160,10 @@ char* process_tcp_message (char* request) {
 		int n = read(fd, fdata, fsize);
 		close(fd);
 
-		sprintf(buffer, "RST FIN %s %d ", fname, fsize);
+		aux = strrchr(fname, '/') + 1;
+		if ( (aux-1) == NULL ) aux = fname;
+
+		sprintf(buffer, "RHL FIN %s %d ", aux, fsize);
 		int len = strlen(buffer) + fsize + 2;
 		reply = (char*) malloc(len*sizeof(char));
 		sprintf(reply, "%s%s\n", buffer, fdata);
@@ -180,10 +183,12 @@ char* process_tcp_message (char* request) {
 			return reply;
 		}
 
-		FILE* fp = NULL;
+		bool fin = false;
 		char fname[64];
+		FILE* fp = NULL;
 		sprintf(fname, "GAMES/GAME_%06d", plid);
 		if ( ( fp = fopen(fname, "r") ) == NULL ) {
+			fin = true;
 			if ( !find_last_game(aux, fname) ) {
 				// NOK
 				reply = new char[10];
@@ -198,7 +203,7 @@ char* process_tcp_message (char* request) {
 		int fsize = ftell(fp);
 		fclose(fp);
 
-		char* fdata = (char*) malloc(fsize*sizeof(char));
+		char* fdata = (char*) malloc((fsize+1)*sizeof(char));
 		if ( fdata == NULL ) {
 			reply = new char[8];
 			strcpy(reply, "ERR\n");
@@ -206,14 +211,18 @@ char* process_tcp_message (char* request) {
 		}
 
 		int fd = open(fname, O_RDONLY);
-		read(fd, fdata, fsize);
+		int n = read(fd, fdata, fsize);
 		close(fd);
+		fdata[n] = '\0';
 
-		// aux is now the file name and fname the file path
 		aux = strrchr(fname, '/') + 1;
-		if ( aux == NULL ) aux = fname;
+		if ( (aux-1) == NULL ) aux = fname;
 
-		sprintf(buffer, "RST FIN %s %d ", aux, fsize);
+		if ( fin ) {
+			sprintf(buffer, "RST FIN %s %d ", aux, fsize);
+		} else {
+			sprintf(buffer, "RST ACT %s %d ", aux, fsize);
+		}
 		int len = strlen(buffer) + fsize + 2;
 		reply = (char*) malloc(len*sizeof(char));
 		sprintf(reply, "%s%s\n", buffer, fdata);

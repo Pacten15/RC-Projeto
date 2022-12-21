@@ -50,36 +50,48 @@ int main (int argc, char** argv) {
 
 	commandlinearguments(argc, argv, &word_file_name, &GSport);
 
-	//init_server(GSport, word_file_name);
+	init_server(GSport, word_file_name);
 
-	char message[32];
+	/*
+	char message[256][2][10];
+	int max = 0;
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "SNG 1\n");
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "PLG 1 r 0\n");
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "PLG 1 a 1\n");
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "PLG 1 b 2\n");
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "PLG 1 k 3\n");
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "PLG 1 k 4\n");
+
+	message[max][0][0] = 'U';
+	strcpy(message[max++][1], "PLG 1 c 4\n");
 
 	char* reply;
+	for ( int i = 0; i < max; i++ ) {
+		if ( message[i][0][0] == 'T' ) {
 
-	strcpy(message, "SNG 1");
-	process_udp_message(message, word_file_name);
-	cout << message;
+			reply = process_tcp_message(message[i][1]);
+			cout << reply;
 
-	strcpy(message, "GHD 1");
-	reply = process_tcp_message(message);
-	cout << reply;
+		} else {
 
-	char* aux = strchr(reply, '0') + 2;
+			process_udp_message(message[i][1], word_file_name);
+			cout << message[i][1];
 
-	FILE* fp = fopen("image.jpg", "w");
-	fclose(fp);
-
-	int fd = open("image.jpg", O_WRONLY);
-	write(fd, aux, 55440);
-	close(fd);
-
-	strcpy(message, "PWG 1 pig 0");
-	process_udp_message(message, word_file_name);
-	cout << message;
-
-	strcpy(message, "STA 1");
-	reply = process_tcp_message(message);
-	cout << reply;
+		}
+	}
+	*/
 
 	return 0;
 
