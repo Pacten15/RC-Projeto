@@ -89,8 +89,8 @@ char* process_tcp_message (char* request) {
 		scorelist list;
 		if ( find_top_scores(&list) == 0 ) {
 			reply = (char*) malloc(16*sizeof(char));
-			strcpy(reply, "RSB EMPTY");
-			return NULL;
+			strcpy(reply, "RSB EMPTY\n");
+			return reply;
 		}
 
 		int fsize = 0;
@@ -120,6 +120,8 @@ char* process_tcp_message (char* request) {
 		fprintf(fp, "%s", fdata);
 		delete[] fdata;
 		fclose(fp);
+
+		return reply;
 
 	} else if ( request[0] == 'G' &&
 			request[1] == 'H' &&
@@ -225,7 +227,7 @@ char* process_tcp_message (char* request) {
 		}
 		int len = strlen(buffer) + fsize + 2;
 		reply = (char*) malloc(len*sizeof(char));
-		sprintf(reply, "%s%s\n", buffer, fdata);
+		sprintf(reply, "%s%s", buffer, fdata);
 
 		free(fdata);
 		return reply;

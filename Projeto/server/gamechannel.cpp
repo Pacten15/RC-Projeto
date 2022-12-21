@@ -137,7 +137,7 @@ void process_udp_message (char* message, char* word_file_name) {
 
 		char letter;
 
-		if ( plid < 0 ) {
+		if ( plid < 0 || ginfo.plays < 0 ) {
 			strcpy(message, "RLG ERR\n");
 			return;
 		}
@@ -220,6 +220,9 @@ void process_udp_message (char* message, char* word_file_name) {
 
 			ginfo.plays++;
 			ginfo.errors++;
+
+			fprintf(fp, "T %s\n", ginfo.word);
+
 			if ( ginfo.errors < ginfo.max_errors ) {
 				// NOK
 				sprintf(message, "RLG NOK %d %d\n", ginfo.max_errors-ginfo.errors, ginfo.plays);
@@ -293,23 +296,24 @@ void process_udp_message (char* message, char* word_file_name) {
 			message[1] == 'U' &&
 			message[2] == 'T' ) {
 		
-		if ( plid < 0 ) {
+		if ( plid < 0 || ginfo.plays < 0 ) {
 			strcpy(message, "RQT ERR\n");
 			return;
 		}
-		archive_game(&ginfo, 'Q');
 		strcpy(message, "RQT OK\n");
+		archive_game(&ginfo, 'Q');
 		return;
 
 	} else if ( message[0] == 'R' &&
 			message[1] == 'E' &&
 			message[2] == 'V' ) {
 		
-		if ( plid < 0 ) {
+		if ( plid < 0 || ginfo.plays < 0 ) {
 			strcpy(message, "RRV ERR\n");
 			return;
 		}
 		sprintf(message, "RRV %s\n", ginfo.word);
+		archive_game(&ginfo, 'Q');
 		return;
 
 	} else {
@@ -351,8 +355,8 @@ void update_game_info (game_info* ginfo, int plid) {
 		ginfo->max_errors = 9;
 	}
 
-	int aux = 0;
 	ginfo->plays = 0;
+	ginfo->errors = 0;
 	while ( fgets(buffer, 128, fp) != NULL ) {
 		ginfo->plays++;
 		switch(buffer[0]) {
@@ -363,9 +367,8 @@ void update_game_info (game_info* ginfo, int plid) {
 							ginfo->letter_guesses[i] = 1;
 						}
 					}
-					ginfo->errors++;
 				} else {
-					aux = 0;
+					ginfo->errors++;
 				}
 				break;
 			case 'G':
