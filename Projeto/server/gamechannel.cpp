@@ -41,7 +41,10 @@ int open_udp_socket (char* GSport) {
 	struct addrinfo hints,*res;
 
     fd=socket(AF_INET,SOCK_DGRAM,0); //UDP socket
-    if(fd==-1) /*error*/exit(1);
+	if(fd==-1) {
+		cout << "Erro no socket. Abortando." << endl;
+		exit(-1);
+	}
     
     memset(&hints, 0, sizeof(hints));
     hints.ai_family=AF_INET; // IPv4
@@ -49,13 +52,17 @@ int open_udp_socket (char* GSport) {
     hints.ai_flags=AI_PASSIVE;
     
     errcode=getaddrinfo(NULL,GSport,&hints,&res);
-    if(errcode!=0) /*error*/ exit(1);
+	if(errcode!=0) {
+		cout << "Erro no getaddrinfo(" << errcode << "). Abortando." << endl;
+		cout << gai_strerror(errcode) << endl;
+		exit(-1);
+	}
     
     n=bind(fd,res->ai_addr, res->ai_addrlen);
     if(n==-1){
 		cout << "Erro no bind. Abortando." << endl;
         exit(1);
-    } /*error*/ 
+    }
 
 	freeaddrinfo(res);
 
@@ -304,7 +311,7 @@ void update_game_info (game_info* ginfo, int plid) {
 	
 	ginfo->plid = plid;
 
-	sprintf(ginfo->game_filename, "GAMES/GAME_%d", plid);
+	sprintf(ginfo->game_filename, "GAMES/GAME_%06d", plid);
 	fp = fopen(ginfo->game_filename, "r");
 	if ( fp == NULL ) {
 		ginfo->plays = -1;
@@ -381,13 +388,31 @@ void archive_game (game_info* ginfo, const char code) {
 	tm ltm;
 	localtime_r(&now, &ltm);
 
-	sprintf(buffer, "GAMES/%06d/%04d%02d%02d_%02d%02d%02d_%c",
+	sprintf(buffer, "GAMES/%06d/%04d%02d%02d_%02d%02d%02d_%c.txt",
 			ginfo->plid,
 			1900+ltm.tm_year, ltm.tm_mon, ltm.tm_mday,
 			ltm.tm_hour, ltm.tm_min, ltm.tm_sec,
 			code);
 
-	rename(ginfo->game_filename, buffer);
+	FILE* fp = fopen(ginfo->game_filename, "r");
+	fseek(fp, 0L, SEEK_END);
+	int fsize = ftell(fp);
+	fclose(fp);
+
+	char* fdata = (char*) malloc(fsize*sizeof(char));
+
+	int fd = open(ginfo->game_filename, O_RDONLY);
+	read(fd, fdata, fsize);
+	close(fd);
+
+	fp = fopen(buffer, "w");
+	if ( fp != NULL ) fclose(fp);
+
+	fd = open(buffer, O_WRONLY);
+	write(fd, fdata, fsize);
+	close(fd);
+
+	remove(ginfo->game_filename);
 
 	if ( code == 'W' ) {
 
@@ -398,7 +423,7 @@ void archive_game (game_info* ginfo, const char code) {
 			score = 0;
 		}
 
-		sprintf(buffer, "SCORES/%03d_%06d_%04d%02d%02d_%02d%02d%02d",
+		sprintf(buffer, "SCORES/%03d_%06d_%04d%02d%02d_%02d%02d%02d.txt",
 				score, ginfo->plid,
 				1900+ltm.tm_year, ltm.tm_mon, ltm.tm_mday,
 				ltm.tm_hour, ltm.tm_min, ltm.tm_sec);

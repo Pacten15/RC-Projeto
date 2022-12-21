@@ -2,7 +2,7 @@
 # compilador a utilizar
 CC= g++
 # flags para compilar
-CFLAGS= -g -Wall -Wextra
+CFLAGS= -g
 # gerar variáveis com listas ficheiros de cada tipo para usar nas várias regras
 SRCS=$(wildcard *.cpp)
 OBJS=$(patsubst %.cpp, %.o, $(SRCS))
@@ -26,4 +26,4 @@ clean:
 	rm -f *.o
 
 rm:
-	rm SCORES/*; rm -rf GAMES/*;
+	rm SCORES/*; rm -rf GAMES/*; rm SB_*;

@@ -12,7 +12,7 @@ void commandlinearguments (int argc, char** argv, char** word_file_name, char** 
 		switch (opt) {
 			case 'p':
 				cout << optarg << endl;
-				*GSport = optarg;
+				sprintf(*GSport, "%s\n", optarg);
 				break;
 			case 'v':
 				verbose = true;
@@ -45,7 +45,7 @@ void init_server (char* GSport, char* word_file_name) {
 
 int main (int argc, char** argv) {
 
-	char* GSport = new char[6];
+	char* GSport = new char[8];
 	char* word_file_name = NULL;
 
 	commandlinearguments(argc, argv, &word_file_name, &GSport);
@@ -53,21 +53,34 @@ int main (int argc, char** argv) {
 	//init_server(GSport, word_file_name);
 
 	char message[32];
+
 	char* reply;
 
-	strcpy(message, "SNG 123");
+	strcpy(message, "SNG 1");
 	process_udp_message(message, word_file_name);
 	cout << message;
-	
-	strcpy(message, "PWG 123 pig 0");
-	process_udp_message(message, word_file_name);
-	cout << message;
-	
-	strcpy(message, "GSB");
+
+	strcpy(message, "GHD 1");
 	reply = process_tcp_message(message);
-	cout << reply << endl;
-	free(reply);
-	
+	cout << reply;
+
+	char* aux = strchr(reply, '0') + 2;
+
+	FILE* fp = fopen("image.jpg", "w");
+	fclose(fp);
+
+	int fd = open("image.jpg", O_WRONLY);
+	write(fd, aux, 55440);
+	close(fd);
+
+	strcpy(message, "PWG 1 pig 0");
+	process_udp_message(message, word_file_name);
+	cout << message;
+
+	strcpy(message, "STA 1");
+	reply = process_tcp_message(message);
+	cout << reply;
+
 	return 0;
 
 }

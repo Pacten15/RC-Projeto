@@ -125,10 +125,106 @@ char* process_tcp_message (char* request) {
 			request[1] == 'H' &&
 			request[2] == 'D' ) {
 
+		char* aux = strchr(request, ' ') + 1; 
+		int plid = stoi(aux, 0, 10);
+		if ( plid < 0 && plid > 999999 ) {
+			reply = new char[8];
+			strcpy(reply, "ERR\n");
+			return reply;
+		}
+
+		game_info ginfo;
+		update_game_info(&ginfo, plid);
+
+		if ( ginfo.plays == -1 ) {
+			reply = new char[10];
+			strcpy(reply, "RHL NOK\n");
+			return reply;
+		}
+
+		char* fname = ginfo.file;
+
+		FILE* fp = fopen(fname, "r");
+		fseek(fp, 0L, SEEK_END);
+		int fsize = ftell(fp);
+		fclose(fp);
+
+		char* fdata = (char*) malloc(fsize*sizeof(char));
+		if ( fdata == NULL ) {
+			reply = new char[8];
+			strcpy(reply, "ERR\n");
+			return reply;
+		}
+
+		int fd = open(fname, O_RDONLY);
+		int n = read(fd, fdata, fsize);
+		close(fd);
+
+		sprintf(buffer, "RST FIN %s %d ", fname, fsize);
+		int len = strlen(buffer) + fsize + 2;
+		reply = (char*) malloc(len*sizeof(char));
+		sprintf(reply, "%s%s\n", buffer, fdata);
+
+		free(fdata);
+		return reply;
+
 	} else if ( request[0] == 'S' &&
 			request[1] == 'T' &&
 			request[2] == 'A' ) {
 
+		char* aux = strchr(request, ' ') + 1; 
+		int plid = stoi(aux, 0, 10);
+		if ( plid < 0 && plid > 999999 ) {
+			reply = new char[8];
+			strcpy(reply, "ERR\n");
+			return reply;
+		}
+
+		FILE* fp = NULL;
+		char fname[64];
+		sprintf(fname, "GAMES/GAME_%06d", plid);
+		if ( ( fp = fopen(fname, "r") ) == NULL ) {
+			if ( !find_last_game(aux, fname) ) {
+				// NOK
+				reply = new char[10];
+				strcpy(reply, "RST NOK\n");
+				return reply;
+			}
+		}
+
+		// FIN & ACT
+		fp = fopen(fname, "r");
+		fseek(fp, 0L, SEEK_END);
+		int fsize = ftell(fp);
+		fclose(fp);
+
+		char* fdata = (char*) malloc(fsize*sizeof(char));
+		if ( fdata == NULL ) {
+			reply = new char[8];
+			strcpy(reply, "ERR\n");
+			return reply;
+		}
+
+		int fd = open(fname, O_RDONLY);
+		read(fd, fdata, fsize);
+		close(fd);
+
+		// aux is now the file name and fname the file path
+		aux = strrchr(fname, '/') + 1;
+		if ( aux == NULL ) aux = fname;
+
+		sprintf(buffer, "RST FIN %s %d ", aux, fsize);
+		int len = strlen(buffer) + fsize + 2;
+		reply = (char*) malloc(len*sizeof(char));
+		sprintf(reply, "%s%s\n", buffer, fdata);
+
+		free(fdata);
+		return reply;
+
+	} else {
+		reply = new char[8];
+		strcpy(reply, "ERR\n");
+		return reply;
 	}
 
 	return NULL;
@@ -184,5 +280,35 @@ int find_top_scores (scorelist* list) {
 
 	list->n_scores = i_file;
 	return i_file;
+
+}
+
+int find_last_game (char* plid, char* fname) {
+
+	struct dirent** filelist;
+	int n_entries, found;
+	char dirname[20];
+
+	int plid_int = stoi(plid, 0, 10);
+	sprintf(dirname,"GAMES/%06d/", plid_int);
+	n_entries = scandir(dirname, &filelist, 0, alphasort);
+
+	found = 0;
+	if ( n_entries <= 0 ) {
+		return 0;
+	} else {
+		while ( n_entries-- ) {
+			if ( filelist[n_entries]->d_name[0] != '.' ) {
+				sprintf(fname, "GAMES/%06d/%s", plid_int, filelist[n_entries]->d_name);
+				found = 1;
+			}
+			free(filelist[n_entries]);
+			if ( found ) {
+				break;
+			}
+		}
+		free (filelist);
+		return found;
+	}
 
 }

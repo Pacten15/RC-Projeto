@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
+#include <fcntl.h>
 #include <time.h>
 #include <ctime>
 #include <fstream>
