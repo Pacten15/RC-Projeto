@@ -1,0 +1,7 @@
+     Active game found for player 099265
+     --- Transactions found: 4 ---
+     Letter trial: a - FALSE
+     Letter trial: e - FALSE
+     Letter trial: i - TRUE
+     Letter trial: o - TRUE
+     Solved so far: -i--o--o---

@@ -269,6 +269,13 @@ vector<string> get_data_command(char** command)
     return res;
 }
 
+
+
+/*****************************************************************************************************************************/
+/*****************************************************************************************************************************/
+
+
+
 /**Secundary functions used on the function send_tcp_message
 formatting the message received to the parameters received and
 place the data from the message to a file**/
@@ -310,7 +317,7 @@ void process_respose_state(string message_retrived)
         string file_data_not_process;
         string file_name = parsed_message[2]; 
         int size_data = stoi(parsed_message[3]);/*size of data file*/
-        string file_directory = "State/";
+        string file_directory = "States/";
         file_directory.append(file_name);/*Directory of the file*/
         ofstream response_file(file_directory);/*criation of the file on the directory*/
         char buffer2[size_data];/*buffer to store only the data file*/
@@ -329,6 +336,7 @@ void process_respose_state(string message_retrived)
         cout << "The player Has No Associated Games\n\n";
 
 }
+
 
 
 /**Senders**/
@@ -372,9 +380,6 @@ void send_to_udp_server(string message,string port,string ip)
 }
 
 
-
-
-/**+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 
 /*Function that receives a message,the port and ip 
@@ -702,7 +707,7 @@ int main(int argc,char** argv)
                 cout << max_errors;
                 cout << " errors): ";
                 cout << board << "\n";
-                cout << "Trial: " << num_trials - 1 << "\n";
+                cout << "Trial: " << num_trials << "\n";
                 cout << "Number of Errors: " << num_error << "/" << max_errors << "\n\n";
             }
             else if(strcmp(game_settings[0].c_str(),"RSG")==0 && strcmp(game_settings[1].c_str(),"ERR")==0)
