@@ -18,8 +18,9 @@
 #include <bitset>
 #include<algorithm>
 using namespace std;
-
+#define GN 30;
 string received_udp;
+
 
 
 
@@ -31,6 +32,7 @@ void print_string(string s)
     printf("%s\n", s.c_str());
 }
 
+/*Function to process the word translating to the board of the game*/
 string format_result(string result)
 {
     string f_result;
@@ -43,6 +45,7 @@ string format_result(string result)
     return f_result;
 }
 
+/*Function that puts all the elements of a string on their upper case form*/
 string all_string_upper(string s)
 {
     string s_result;
@@ -54,6 +57,8 @@ string all_string_upper(string s)
     return s_result;
 }
 
+/*Creates a string that makes the simples server requests
+readeble by the server*/
 string format_message(string command,string message)
 {
     string formated_message;
@@ -76,7 +81,8 @@ void print_vector(vector<string> v1)
 }
 
 
-
+/*Gives the number of cha*(strings) 
+that exist in a char**(string vector)*/
 int get_number_of_elements(char ** argument)
 {
     vector<string> v;
@@ -86,6 +92,10 @@ int get_number_of_elements(char ** argument)
     return i;
 }
 
+
+/*Creates a vector<string> containing 
+all the substrings separeted with a space " " that exist 
+on a string*/
 vector<string> parse_string(string s)
 {
     vector<string> result;
@@ -99,12 +109,12 @@ vector<string> parse_string(string s)
         s.erase(0,pointer + delimita.length());
         
     }
-    /**remover o \n**/
-    s.erase(s.length()-1,1);
-    /*Colocar a ultima palavra*/
-    result.push_back(s);
+    s.erase(s.length()-1,1);/*removes the \n from the last word*/
+    result.push_back(s);/*puts the last word*/
     return result;
 }
+
+
 
 int count_spaces_on_string(string message)
 {
@@ -120,6 +130,7 @@ int count_spaces_on_string(string message)
     return counter;
 }
 
+/*function to indicate the index of the n space that exists on a string*/
 int find_n_index_of_spaces(string s,int n)
 {
     int in,counter,index;
@@ -137,6 +148,9 @@ int find_n_index_of_spaces(string s,int n)
 
 //*Board Manipulation*//
 
+/*Consider board as the spaces where the letters are going to be placed*/
+
+/*Draw the underscores where the letters will be placed*/
 string draw_board(int n)
 {
     string board;
@@ -147,6 +161,8 @@ string draw_board(int n)
     return board;
 }
 
+/*replace the underscores of the positions refered on the play sent from the server with 
+the letter sent to the server*/
 string place_in_board(string board,string letter,vector<string> play)
 {
    int i;
@@ -170,6 +186,8 @@ string place_in_board(string board,string letter,vector<string> play)
    return board;
 }
 
+/*function that gives a vector containing the indexes of the spots of the 
+board where a letter hasnt been placed*/
 vector<int> find_empty_spots(string board)
 {
     vector<int> empty_positions;
@@ -183,6 +201,7 @@ vector<int> find_empty_spots(string board)
     return empty_positions;
 }
 
+/*function that fills the underscores on a board with the letter from the input*/
 string fill_board(string board,string letter)
 {
     vector<int> empty_positions = find_empty_spots(board);
@@ -194,9 +213,9 @@ string fill_board(string board,string letter)
     return board;
 }
 
-//**************************************************//
+/**Command**/
 
-//* Retrieve the data needed to execute the program *//
+/* Retrieve ip and port of server where the game is running*/
 
 vector<string> get_data_command(char** command)
 {
@@ -222,7 +241,8 @@ vector<string> get_data_command(char** command)
         if(strcmp(string(command[1]).c_str(),"-n")==0)
         {
             ip = string(command[2]);
-            port = "58011";
+            int g_n = GN;
+            port = to_string(58000 + g_n);
             
 
         }
@@ -240,7 +260,8 @@ vector<string> get_data_command(char** command)
         char buffer2[128];
         gethostname(buffer2,128);
         ip = string(buffer2);
-        port = "58011";
+        int g_n = GN;
+        port = to_string(58000 + g_n);
 
     }
     res.push_back(ip);
@@ -248,10 +269,74 @@ vector<string> get_data_command(char** command)
     return res;
 }
 
+/**Secundary functions used on the function send_tcp_message
+formatting the message received to the parameters received and
+place the data from the message to a file**/
+
+/*function to process all the content from a scorboard message and afterwards put the data into a file*/
+void process_response_scoreboard(string message_retrived)
+{
+    if(strcmp(message_retrived.c_str(),"The Scoreboard is Empty\n") != 0){
+        vector<string> parsed_message = parse_string(message_retrived);
+        string file_name = parsed_message[2];
+        int size_data = stoi(parsed_message[3]);
+        string file_directory = "Score_boards/";
+        file_directory.append(file_name);/*Diretoria do ficheiro*/
+        ofstream response_file(file_directory);/*Criacao do ficheiro*/
+        char buffer2[size_data];/*numero de bytes que o ficheiro tem*/
+        int index_begin_file = message_retrived.find('\n')+1;
+        string file_data_not_process = message_retrived.substr(index_begin_file,size_data);/*string that only has the data_file*/
+        /*conversions to use strcpy and put the data into a buffer that is placed on the file*/
+        const char* data_cos_char = file_data_not_process.data();
+        char* data_char = (char*)data_cos_char;
+        strcpy(buffer2,data_char);
+        response_file << buffer2;
+
+        response_file.close();
+        cout << "Received Scoreboard File: " << file_directory << " (" << size_data << ")" << "\n";
+        cout << file_data_not_process;
+        
+    }
+    else
+        cout << "The Scoreboard is Empty\n";
+}
 
 
+/*function to process all the content from a state message and afterwards put the data into a file*/
+void process_respose_state(string message_retrived)
+{
+    if(strcmp(message_retrived.c_str(),"The player Has No Associated Games\n") != 0){
+        vector<string> parsed_message = parse_string(message_retrived);
+        string file_data_not_process;
+        string file_name = parsed_message[2]; 
+        int size_data = stoi(parsed_message[3]);/*size of data file*/
+        string file_directory = "State/";
+        file_directory.append(file_name);/*Directory of the file*/
+        ofstream response_file(file_directory);/*criation of the file on the directory*/
+        char buffer2[size_data];/*buffer to store only the data file*/
+        int start_file_index = find_n_index_of_spaces(message_retrived,5);
+        file_data_not_process = message_retrived.substr(start_file_index,size_data);/*string that only has the data_file*/
+        /*conversions to use strcpy and put the data into a buffer that is placed on the file*/
+        const char* data_cos_char = file_data_not_process.data();
+        char* data_char = (char*)data_cos_char;
+        strcpy(buffer2,data_char);
+        response_file << buffer2;
+        response_file.close();
+        cout << "Received State File: " << file_directory << " (" << size_data << ")" << "\n";
+        cout << file_data_not_process << "\n\n";
+    }
+    else
+        cout << "The player Has No Associated Games\n\n";
 
-                                                                       
+}
+
+
+/**Senders**/
+
+/*Function that receives a message,the port and ip 
+of the server in wich the games is running, sending 
+the message to the server and putting the answer into 
+a string globally allocated*/                                                                    
 void send_to_udp_server(string message,string port,string ip)
 {
  
@@ -266,7 +351,6 @@ void send_to_udp_server(string message,string port,string ip)
     size_t message_lenght = message.length();
     const char* port_char = port.c_str();
     const char* ip_char = ip.c_str();
-    cout <<message << "\n";
     fd=socket(AF_INET,SOCK_DGRAM,0); //UDP socket
     if(fd==-1) /*error*/exit(1);
     memset(&hints,0,sizeof hints);
@@ -288,61 +372,14 @@ void send_to_udp_server(string message,string port,string ip)
 }
 
 
-/******functios to process all the content from a message and afterwards put the data into a file******/
-void process_response_scoreboard(string message_retrived)
-{
-    if(strcmp(message_retrived.c_str(),"The Scoreboard is Empty\n") != 0){
-        vector<string> parsed_message = parse_string(message_retrived);
-        string file_name = parsed_message[2];
-        int size_data = stoi(parsed_message[3]);
-        ofstream response_file(file_name);/*Nome do ficheiro*/
-        char buffer2[size_data];/*numero de bytes que o ficheiro tem*/
-        int index_begin_file = message_retrived.find('\n')+1;
-        string file_data_not_process = message_retrived.substr(index_begin_file,size_data);
-        const char* data_cos_char = file_data_not_process.data();
-        char* data_char = (char*)data_cos_char;
-        strcpy(buffer2,data_char);
-        response_file << buffer2;
 
-        response_file.close();
-        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
-        cout << file_data_not_process;
-        
-    }
-    else
-        cout << "The Scoreboard is Empty\n";
-}
-
-void process_respose_state(string message_retrived)
-{
-    if(strcmp(message_retrived.c_str(),"The player Has No Associated Games\n") != 0){
-        vector<string> parsed_message = parse_string(message_retrived);
-        string file_data_not_process;
-        string file_name = parsed_message[2];
-        int size_data = stoi(parsed_message[3]);
-        ofstream response_file(file_name);/*Nome do ficheiro*/
-        char buffer2[size_data];/*numero de bytes que o ficheiro tem*/
-        int start_file_index = find_n_index_of_spaces(message_retrived,5);
-        file_data_not_process = message_retrived.substr(start_file_index,size_data);
-        const char* data_cos_char = file_data_not_process.data();
-        char* data_char = (char*)data_cos_char;
-        strcpy(buffer2,data_char);
-        response_file << buffer2;
-        response_file.close();
-        cout << "Received Scoreboard File: " << file_name << " (" << size_data << ")" << "\n";
-        cout << file_data_not_process << "\n\n";
-    }
-    else
-        cout << "The player Has No Associated Games\n\n";
-
-    
-
-}
 
 /**+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 
-
+/*Function that receives a message,the port and ip 
+of the server in which the games is running and depending on the message sent to the server
+it creates a file with data received from it*/
 string send_to_tcp_server(string message,string port,string ip)
 {
     int fd,errcode,n;
@@ -351,7 +388,6 @@ string send_to_tcp_server(string message,string port,string ip)
     struct addrinfo hints,*res;
     struct sockaddr_in addr;
     vector<string> message_parsed = parse_string(message);
-    cout << message << "\n";
     fd=socket(AF_INET,SOCK_STREAM,0); //TCP socket
     if (fd==-1){
         printf("erro ao criar o socket");
@@ -396,10 +432,12 @@ string send_to_tcp_server(string message,string port,string ip)
     memset(buffer,0,sizeof(buffer));
     char buffer_read[128];
     string received_message = "";
-    /*Read data from the server to the player*/
+
+    /*Read data from the server to a file in the player directory*/
     if(strcmp(message.c_str(),"GSB\n")==0)
     {
         string status;
+        /*reads the first two elemements from the message*/
         while(true){
             memset(buffer_read,0,sizeof(buffer_read));
             n_read = read(fd,buffer_read,1);
@@ -410,8 +448,10 @@ string send_to_tcp_server(string message,string port,string ip)
             else
             {
                 received_message.append(buffer_read);
+                /*condition that stops the read when the as read two elements of the message sent from a server*/
                 if(count_spaces_on_string(received_message) == 2)
                 {
+                    /*obtain the second element of the message that contains the status*/
                     status = received_message.substr(find_n_index_of_spaces(received_message,1)+1,find_n_index_of_spaces(received_message,2)-find_n_index_of_spaces(received_message,1)-1);
                     break;
                 }
@@ -419,6 +459,7 @@ string send_to_tcp_server(string message,string port,string ip)
         }
         if(strcmp(status.c_str(),"OK")==0)
         {
+            /*reads the rest of the message containing the name of the file, size and his data*/
             while(true){
                 memset(buffer_read,0,sizeof(buffer_read));
                 n_read = read(fd,buffer_read,32);
@@ -447,6 +488,7 @@ string send_to_tcp_server(string message,string port,string ip)
         int imag_size;
         string file_name;
         string status;
+        /*reads the first two elemements from the message*/
         while(true){
             memset(buffer_read,0,sizeof(buffer_read));
             n_read = read(fd,buffer_read,1);
@@ -457,14 +499,17 @@ string send_to_tcp_server(string message,string port,string ip)
             else
             {
                 received_message.append(buffer_read);
+                /*condition that stops the read when the as read two elements of the message sent from a server*/
                 if(count_spaces_on_string(received_message) == 2)
                 {
+                    /*obtain the second element of the message that contains the status*/
                     status = received_message.substr(find_n_index_of_spaces(received_message,1)+1,find_n_index_of_spaces(received_message,2)-find_n_index_of_spaces(received_message,1)-1);
                     break;
                 }
             }
         }
         if(strcmp(status.c_str(),"OK")==0){
+            /*Read the next two elements containing the file name*/
             while(true)
             {
                 memset(buffer_read,0,sizeof(buffer_read));
@@ -479,6 +524,7 @@ string send_to_tcp_server(string message,string port,string ip)
                 else
                 {
                     received_message.append(buffer_read);
+                    /*condition that stops the read when the as read four elements of the message sent from a server*/
                     if(count_spaces_on_string(received_message) == 4)
                     {
                         string file_name_char = received_message.substr(find_n_index_of_spaces(received_message,2)+1,find_n_index_of_spaces(received_message,3)-find_n_index_of_spaces(received_message,2)-1);
@@ -489,19 +535,23 @@ string send_to_tcp_server(string message,string port,string ip)
                     }
                 }
             }
+
             char buffer_imag[256];
-            ofstream response_file(file_name);
+            string file_directory = "Hints/";
+            file_directory.append(file_name);
+            ofstream response_file(file_directory);
             ssize_t bytes_to_read = 128;
-            size_t number_to_read_full_buffer = imag_size/bytes_to_read;
-            cout << number_to_read_full_buffer << "\n";
+            size_t number_to_read_full_buffer = imag_size/bytes_to_read;/*number of times we can read 128 bytes from the server */
+            /*number of bytes left to read when its need to read less of 128 bytes*/
             size_t number_left = imag_size - (number_to_read_full_buffer*bytes_to_read);
-            cout << number_left << "\n";
             int counter = 0;
+
+            /*Reads from the server the image data that can be read in cycles of 128 bytes,
+            registers into counter the real number of bytes read and puts the bytes into the file*/
             for(int i=0;i<number_to_read_full_buffer;i++)
             {
-                memset(buffer_imag,0,sizeof(buffer_imag));
+                memset(buffer_imag,0,sizeof(buffer_imag));/*clean buffer for next interation*/
                 n_read = read(fd,buffer_imag,bytes_to_read);
-                cout << n_read << "\n";
                 if(n_read==-1){
                     printf("Erro de Leitura\n");
                     exit(1);
@@ -515,16 +565,17 @@ string send_to_tcp_server(string message,string port,string ip)
                 }
                 counter += n_read;
             }
+            /*The read sometimes doesnt read the number of bytes we ask to*/
             if(counter != number_to_read_full_buffer)
             {
-                char rest[128 + number_to_read_full_buffer*128-counter];
+                char rest[128 + number_to_read_full_buffer*128-counter];/*buffer with the size of the bytes not read during the previous cycle*/
                 n_read = read(fd,rest,number_to_read_full_buffer*128-counter);
                 for(int j=0;j<number_to_read_full_buffer*128-counter;j++)
                         response_file << rest[j];
             }
+            /*read the rest of the bytes left */
             if(number_left !=0){
                 n_read = read(fd,buffer_imag,number_left);
-                cout << n_read << "\n";
                 if(n_read==-1){
                     printf("Erro de Leitura\n");
                     exit(1);
@@ -538,7 +589,7 @@ string send_to_tcp_server(string message,string port,string ip)
             
             
             response_file.close();
-            cout << "Received Hint File: " << file_name << " (" << imag_size << ")" << "\n\n";
+            cout << "Received Hint File: " << file_directory << " (" << imag_size << ")" << "\n\n";
             
         }
         else 
@@ -550,6 +601,7 @@ string send_to_tcp_server(string message,string port,string ip)
     if(strcmp(message_parsed[0].c_str(),"STA")==0)
     {
         string status;
+        /*reads the first two elemements from the message*/
         while(true){
             memset(buffer_read,0,sizeof(buffer_read));
             n_read = read(fd,buffer_read,1);
@@ -558,10 +610,12 @@ string send_to_tcp_server(string message,string port,string ip)
                 exit(1);
             }
             else
-            {
+            {          
                 received_message.append(buffer_read);
+                /*condition that stops the read when the as read two elements of the message sent from a server*/
                 if(count_spaces_on_string(received_message) == 2)
                 {
+                    /*obtain the second element of the message that contains the status*/
                     status = received_message.substr(find_n_index_of_spaces(received_message,1)+1,find_n_index_of_spaces(received_message,2)-find_n_index_of_spaces(received_message,1)-1);
                     break;
                 }
@@ -598,15 +652,15 @@ string send_to_tcp_server(string message,string port,string ip)
 void instructions()
 {
     cout << "                   GAME INSTRUCTIONS                   \n\n";
-    cout << "write start or sg           -> start a game\n";
-    cout << "write play or pl + a letter -> guess a letter from the game word\n";
-    cout << "write guess or sw + a word  -> guess the word from the game\n";
-    cout << "write rev                   -> reveal the word and end game\n";
-    cout << "write scoreboard or sb      -> Sends text file with the 10-top scores of the game\n";
-    cout << "write hit or h              -> help to guess the word by a image file\n";
-    cout << "write state or st           -> get state of the current game\n";   
-    cout << "write quit                  -> terminate ongoing game\n";
-    cout << "write exit                  -> terminates program and a possible ongoing game\n\n"; 
+    cout << "write start or sg + player_id  -> start a game\n";
+    cout << "write play or pl + a letter    -> guess a letter from the game word\n";
+    cout << "write guess or sw + a word     -> guess the word from the game\n";
+    cout << "write rev                      -> reveal the word and end game\n";
+    cout << "write scoreboard or sb         -> Sends text file with the 10-top scores of the game\n";
+    cout << "write hit or h                 -> help to guess the word by a image file\n";
+    cout << "write state or st              -> get state of the current game\n";   
+    cout << "write quit                     -> terminate ongoing game\n";
+    cout << "write exit                     -> terminates program and a possible ongoing game\n\n"; 
     
 }
 
@@ -620,6 +674,8 @@ int main(int argc,char** argv)
     string player_id;
     string board;
     string previous_player_id;
+    string previous_message_play;
+    string previous_message_guess;
     int end_player = 0;
     int num_trials=1;
     int num_error=0;
@@ -628,7 +684,10 @@ int main(int argc,char** argv)
     while(end_player == 0)
     {
         //************************************************************** UDP INTERACTION******************************************************//
+
+        
         cin >> player_command;
+        /*compare the player comand with the possible commands*/
         if(strcmp(player_command.c_str(),"start")==0 || strcmp(player_command.c_str(),"sg")==0){
             cin >> player_id;
             string message_to_send = format_message("SNG",player_id);
@@ -636,6 +695,7 @@ int main(int argc,char** argv)
             player_command = "";
             vector<string> game_settings = parse_string(received_udp);
             if(strcmp(game_settings[0].c_str(),"RSG")==0 && strcmp(game_settings[1].c_str(),"OK")==0)
+            {
                 board = draw_board(stoi(game_settings[2]));
                 max_errors = stoi(game_settings[3]);
                 cout << "New game started (max ";
@@ -644,6 +704,11 @@ int main(int argc,char** argv)
                 cout << board << "\n";
                 cout << "Trial: " << num_trials - 1 << "\n";
                 cout << "Number of Errors: " << num_error << "/" << max_errors << "\n\n";
+            }
+            else if(strcmp(game_settings[0].c_str(),"RSG")==0 && strcmp(game_settings[1].c_str(),"ERR")==0)
+            {
+                "Syntax Of Message Wrong Or Invalid Player ID\n";
+            }
         }
         else if(strcmp(player_command.c_str(),"play")==0 || strcmp(player_command.c_str(),"pl")==0){
             string letter;
@@ -657,54 +722,72 @@ int main(int argc,char** argv)
             string message_to_send = format_message("PLG",message);
             num_trials++;
             player_command = "";
+            if(letter.size() == 0 || letter.size()>1)
+            {
+                cout << "play command only accepts one character use guess to use multiple characters\n\n";
+            }
             send_to_udp_server(message_to_send,port,ip);
+            sleep(1);/*wait for server answer*/
             vector<string> board_possibl_mod = parse_string(received_udp);
-            if(strcmp(board_possibl_mod[1].c_str(),"OK")==0)
-            {
-                board = place_in_board(board,letter,board_possibl_mod);
-                cout << "Yes, ";
-                cout << letter;
-                cout << " is part of the word: ";
-                cout << board << "\n";
-                cout << "Trial: " << num_trials - 1 << "\n";
-                cout << "Number of Errors: " << num_error << "/" << max_errors << "\n\n";
+            if(received_udp.size() != 0){
+                previous_message_play = message_to_send;
+                if(strcmp(board_possibl_mod[1].c_str(),"OK")==0)
+                {
+                    board = place_in_board(board,letter,board_possibl_mod);
+                    cout << "Yes, ";
+                    cout << letter;
+                    cout << " is part of the word: ";
+                    cout << board << "\n";
+                    cout << "Trial: " << num_trials  << "\n";
+                    cout << "Number of Errors: " << num_error << "/" << max_errors << "\n\n";
 
+                }
+                else if(strcmp(board_possibl_mod[1].c_str(),"NOK")==0)
+                {
+                    num_error++;
+                    cout << "The Letter Does Not Belong To The Word: "<< max_errors - num_error << " Allowable Errors\n";
+                    cout << "Current Board: " << board << "\n";
+                    cout << "Trial Number: " << num_trials << "\n\n";
+                }
+                else if(strcmp(board_possibl_mod[1].c_str(),"WIN")==0)
+                {
+                    board = fill_board(board,letter);
+                    cout << "WELL DONE! You Guessed: ";
+                    num_trials = 1;
+                    num_error=0;
+                    max_errors=0;
+                    cout << all_string_upper(board);
+                    cout << " \n\n";
+                }
+                else if(strcmp(board_possibl_mod[1].c_str(),"DUP")==0)
+                {
+                    cout << "The Letter Was Already Sent\n";
+                    cout << "Current Board: " << board << "\n\n";
+                    num_trials--;
+                }
+                else if(strcmp(board_possibl_mod[1].c_str(),"OVR")==0)
+                {
+                    cout << "Theres No More Trials!!!: GAME OVER\n\n";
+                    num_trials = 1;
+                    num_error = 0;
+                    max_errors = 0;
+                }
+                else if(strcmp(board_possibl_mod[1].c_str(),"INV")==0)
+                {
+                    cout << "Sent Wrong Trial Number or Same Trial Number Different Letter !!!\n\n";
+                }
+                else if(strcmp(board_possibl_mod[1].c_str(),"ERR")==0)
+                {
+                    cout << "Incorrect Message Syntax or Invalid Player Id or This Player ID Has No Ongoing Game\n\n";
+                    num_trials--;
+                }
+                else
+                {
+                    num_trials--;
+                }
             }
-            else if(strcmp(board_possibl_mod[1].c_str(),"NOK")==0)
-            {
-                num_error++;
-                cout << "The Letter Does Not Belong To The Word: "<< max_errors - num_error << " Allowable Errors\n";
-                cout << "Current Board: " << board << "\n";
-                cout << "Trial Number: " << num_trials-1 << "\n\n";
-            }
-            else if(strcmp(board_possibl_mod[1].c_str(),"WIN")==0)
-            {
-                board = fill_board(board,letter);
-                cout << "WELL DONE! You Guessed: ";
-                num_trials = 1;
-                num_error=0;
-                max_errors=0;
-                cout << all_string_upper(board);
-                cout << " \n";
-            }
-            else if(strcmp(board_possibl_mod[1].c_str(),"DUP")==0)
-            {
-                cout << "The Letter Was Already Sent\n";
-                cout << "Current Board: " << board << "\n\n";
-                num_trials--;
-            }
-            else if(strcmp(board_possibl_mod[1].c_str(),"OVR")==0)
-            {
-                cout << "Theres No More Trials!!!: GAME OVER\n\n";
-                num_trials = 1;
-            }
-            else if(strcmp(board_possibl_mod[1].c_str(),"INV")==0)
-            {
-                cout << "Sent Wrong Trial Number !!!\n";
-            }
-            else if(strcmp(board_possibl_mod[1].c_str(),"ERR")==0)
-            {
-                cout << "Incorrect Message Syntax or Invalid Player Id or This Player ID Has No Ongoing Game\n";
+            else if(received_udp.size() == 0){
+                send_to_udp_server(previous_message_play,port,ip);
                 num_trials--;
             }
         }
@@ -721,40 +804,55 @@ int main(int argc,char** argv)
             message.append(to_string(num_trials));
             message_to_send = format_message("PWG",message);
             send_to_udp_server(message_to_send,port,ip);
+            sleep(1);/*wait for server answer*/
             num_trials++;
             player_command = "";
             vector<string> possibl_guess = parse_string(received_udp);
-            if(strcmp(possibl_guess[1].c_str(),"WIN")==0)
+            if(received_udp.size() != 0)
             {
-                cout << "WELL DONE! YOU GUESSED: ";
-                cout << format_result(word);
-                num_trials = 1;
-                num_error = 0;
-                max_errors = 0;
-                cout << "\n";
+                previous_message_guess = message_to_send;
+                if(strcmp(possibl_guess[1].c_str(),"WIN")==0)
+                {
+                    cout << "WELL DONE! YOU GUESSED: ";
+                    cout << format_result(word);
+                    num_trials = 1;
+                    num_error = 0;
+                    max_errors = 0;
+                    cout << "\n";
+                }
+                else if(strcmp(possibl_guess[1].c_str(),"NOK")==0)
+                {
+                    num_error++;
+                    cout << "Wrong Guess: " << max_errors - num_error << " Allowable Errors\n";
+                    cout << "Trial Number: " << num_trials << "\n\n";
+                }
+                else if(strcmp(possibl_guess[1].c_str(),"OVR")==0)
+                {
+                    cout << "Theres No More Trials!!!: GAME OVER\n";
+                    num_trials=1;
+                    num_error = 0;
+                    max_errors = 0;
+                }
+                else if(strcmp(possibl_guess[1].c_str(),"INV")==0)
+                {
+                    cout << "Sent Wrong Trial Number !!!\n\n";
+                }
+                else if(strcmp(possibl_guess[1].c_str(),"ERR")==0)
+                {
+                    cout << "Incorrect Message Syntax or Invalid Player Id or Player ID has No Ongoing Game\n\n";
+                    num_trials--;
+                }
+                else
+                {
+                    num_trials--;
+                }
             }
-            else if(strcmp(possibl_guess[1].c_str(),"NOK")==0)
+            else
             {
-                num_error++;
-                cout << "Wrong Guess: " << max_errors - num_error << " Allowable Errors\n";
-                cout << "Trial Number: " << num_trials-1 << "\n\n";
-            }
-            else if(strcmp(possibl_guess[1].c_str(),"OVR")==0)
-            {
-                cout << "Theres No More Trials!!!: GAME OVER\n";
-                num_trials=1;
-                num_error = 0;
-                max_errors = 0;
-            }
-            else if(strcmp(possibl_guess[1].c_str(),"INV")==0)
-            {
-                cout << "Sent Wrong Trial Number !!!\n\n";
-            }
-            else if(strcmp(possibl_guess[1].c_str(),"ERR")==0)
-            {
-                cout << "Incorrect Message Syntax or Invalid Player Id or Player ID has No Ongoing Game\n\n";
+                send_to_udp_server(previous_message_guess,port,ip);
                 num_trials--;
             }
+
         }
         else if(strcmp(player_command.c_str(),"rev")==0)
         {
@@ -768,7 +866,7 @@ int main(int argc,char** argv)
             } 
             else if(strcmp(status_game_rvl[1].c_str(),"OK")==0)
             {
-                cout << "Terminated Of An Ongoing Game\n\n";
+                cout << "Termination Of An Ongoing Game\n\n";
                 num_trials = 1;
                 num_error = 0;
                 max_errors = 0;
@@ -830,7 +928,14 @@ int main(int argc,char** argv)
         }
         end_player = 1;
        }
+
+
+
+
         //******************************************************************TCP INTERACTION*********************************************************//
+
+
+
         else if(strcmp(player_command.c_str(),"scoreboard")==0 || strcmp(player_command.c_str(),"sb")==0)
         {
              string message_to_send = "GSB\n";
@@ -857,6 +962,8 @@ int main(int argc,char** argv)
             player_command = "";
             process_respose_state(message_received);
         }
+        else
+            cout << "Command Not Recognized\n\n";
         
 
 
