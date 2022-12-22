@@ -360,6 +360,10 @@ void send_to_udp_server(string message,string port,string ip)
     const char* port_char = port.c_str();
     const char* ip_char = ip.c_str();
     fd=socket(AF_INET,SOCK_DGRAM,0); //UDP socket
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+    
     if(fd==-1) /*error*/exit(1);
     memset(&hints,0,sizeof hints);
     hints.ai_family=AF_INET; //IPv4
@@ -368,13 +372,13 @@ void send_to_udp_server(string message,string port,string ip)
     if(errcode!=0) /*error*/ exit(1);
     n=sendto(fd,message_char,message_lenght,0,res->ai_addr,res->ai_addrlen);
     if(n==-1) /*error*/ exit(1);
-
     addrlen=sizeof(addr);
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout,sizeof timeout);
     n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
-    if(n==-1) /*error*/ exit(1);
-
-    received_udp = buffer;
-    
+    if(n==-1) 
+        received_udp = "";
+    else
+        received_udp = buffer;
     freeaddrinfo(res);
     close(fd);
 }
@@ -732,7 +736,6 @@ int main(int argc,char** argv)
                 cout << "play command only accepts one character use guess to use multiple characters\n\n";
             }
             send_to_udp_server(message_to_send,port,ip);
-            sleep(1);/*wait for server answer*/
             vector<string> board_possibl_mod = parse_string(received_udp);
             if(received_udp.size() != 0){
                 previous_message_play = message_to_send;
@@ -809,7 +812,6 @@ int main(int argc,char** argv)
             message.append(to_string(num_trials));
             message_to_send = format_message("PWG",message);
             send_to_udp_server(message_to_send,port,ip);
-            sleep(1);/*wait for server answer*/
             num_trials++;
             player_command = "";
             vector<string> possibl_guess = parse_string(received_udp);
@@ -854,6 +856,7 @@ int main(int argc,char** argv)
             }
             else
             {
+                cout << "out of time";
                 send_to_udp_server(previous_message_guess,port,ip);
                 num_trials--;
             }
