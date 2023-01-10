@@ -2,7 +2,8 @@
 
 void init_messagingchannel (char* GSport) {
 
-	int fd = open_tcp_socket(GSport);
+	struct addrinfo* res;
+	int fd = open_tcp_socket(GSport, &res);
 
 	char* reply;
 	char request[16];
@@ -42,10 +43,13 @@ void init_messagingchannel (char* GSport) {
 		}
 	}
 
+	close(fd);
+	freeaddrinfo(res);
+
 	return;
 }
 
-int open_tcp_socket (char* GSport) {
+int open_tcp_socket (char* GSport, struct addrinfo** r) {
 
 	struct addrinfo hints, *res;
 	int fd = -1, n = -1, errcode;
@@ -58,7 +62,9 @@ int open_tcp_socket (char* GSport) {
     hints.ai_socktype=SOCK_STREAM; //TCP socket
     hints.ai_flags=AI_PASSIVE;
 
-    errcode = getaddrinfo(NULL, GSport, &hints, &res);
+	char buffer[256];
+	gethostname(buffer, 256);
+    errcode = getaddrinfo(buffer, GSport, &hints, &res);
     if ( (errcode) != 0 )/*error*/exit(1);
 
     n = bind(fd,res->ai_addr,res->ai_addrlen);
@@ -68,7 +74,7 @@ int open_tcp_socket (char* GSport) {
 		exit(1);
 	}
 
-	freeaddrinfo(res);
+	*r = res;
     
 	return fd;
 }

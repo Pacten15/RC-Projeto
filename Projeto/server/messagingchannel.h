@@ -13,7 +13,7 @@ typedef struct _scorelist {
 } scorelist;
 
 void init_messagingchannel (char*);
-int open_tcp_socket (char*);
+int open_tcp_socket (char*, struct addrinfo**);
 char* process_tcp_message (char*);
 int find_top_scores (scorelist*);
 int find_last_game(char*, char*);

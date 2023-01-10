@@ -1,0 +1,9 @@
+barracuda Dados_GS/esox_sphyraena.jpg
+T a
+G barracuda
+T b
+T c
+T d
+T g
+T r
+G barracuda

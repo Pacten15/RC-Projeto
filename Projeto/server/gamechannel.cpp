@@ -153,9 +153,9 @@ void process_udp_message (char* message, char* word_file_name) {
 		//trials
 		aux = strchr(aux, ' ') + 1;
 		flag = stoi(aux, 0, 10);
-		if ( flag != ginfo.plays ) {
+		if ( flag != (ginfo.plays+1) ) {
 			// INV
-			sprintf(message, "RLG INV %d\n", ginfo.plays);
+			sprintf(message, "RLG INV %d\n", (ginfo.plays+1));
 			return;
 		}
 
@@ -176,7 +176,7 @@ void process_udp_message (char* message, char* word_file_name) {
 
 			if ( flag ) {
 				// DUP
-				sprintf(message, "RLG DUP %d\n", ginfo.plays);
+				sprintf(message, "RLG DUP %d\n", (ginfo.plays+1));
 				fclose(fp);
 				return;
 			}
@@ -193,7 +193,7 @@ void process_udp_message (char* message, char* word_file_name) {
 				ginfo.plays++;
 				fprintf(fp, "T %c\n", letter);
 				fclose(fp);
-				sprintf(message, "RLG WIN %d\n", ginfo.plays);
+				sprintf(message, "RLG WIN %d\n", (ginfo.plays+1));
 				archive_game(&ginfo, 'W');
 				return;
 			} else {
@@ -201,7 +201,7 @@ void process_udp_message (char* message, char* word_file_name) {
 				ginfo.plays++;
 				fprintf(fp, "T %c\n", letter);
 				fclose(fp);
-				sprintf(message, "RLG OK %d", ginfo.plays);
+				sprintf(message, "RLG OK %d", (ginfo.plays+1));
 
 				flag = 0;
 				for ( int i = 0; i < strlen(ginfo.word); i++ ) {
@@ -229,10 +229,10 @@ void process_udp_message (char* message, char* word_file_name) {
 
 			if ( ginfo.errors < ginfo.max_errors ) {
 				// NOK
-				sprintf(message, "RLG NOK %d %d\n", ginfo.max_errors-ginfo.errors, ginfo.plays);
+				sprintf(message, "RLG NOK %d %d\n", ginfo.max_errors-ginfo.errors, (ginfo.plays+1));
 			} else {
 				// OVR
-				sprintf(message, "RLG OVR %d\n", ginfo.plays);
+				sprintf(message, "RLG OVR %d\n", (ginfo.plays+1));
 				archive_game(&ginfo, 'F');
 			}
 
@@ -260,9 +260,9 @@ void process_udp_message (char* message, char* word_file_name) {
 		//trials
 		aux = strchr(aux, ' ') + 1;
 		flag = stoi(aux, 0, 10);
-		if ( flag != ginfo.plays ) {
+		if ( flag != (ginfo.plays+1) ) {
 			// INV
-			sprintf(message, "RWG INV %d\n", ginfo.plays);
+			sprintf(message, "RWG INV %d\n", (ginfo.plays+1));
 			return;
 		}
 
@@ -271,7 +271,7 @@ void process_udp_message (char* message, char* word_file_name) {
 		ginfo.plays++;
 		if ( strcmp(ginfo.word, wordguess) == 0 ) {
 			// WIN
-			sprintf(message, "RWG WIN %d\n", ginfo.plays);
+			sprintf(message, "RWG WIN %d\n", ginfo.plays+1);
 			fprintf(fp, "G %s\n", ginfo.word);
 			fclose(fp);
 			archive_game(&ginfo, 'W');
@@ -281,13 +281,13 @@ void process_udp_message (char* message, char* word_file_name) {
 			ginfo.errors++;
 			if ( ginfo.errors < ginfo.max_errors ) {
 				// NOK
-				sprintf(message, "RWG NOK %d\n", ginfo.plays);
+				sprintf(message, "RWG NOK %d\n", ginfo.plays+1);
 				fprintf(fp, "G %s\n", ginfo.word);
 				fclose(fp);
 				return;
 			} else {
 				// OVR
-				sprintf(message, "RWG OVR %d\n", ginfo.plays);
+				sprintf(message, "RWG OVR %d\n", ginfo.plays+1);
 				fprintf(fp, "G %s\n", ginfo.word);
 				fclose(fp);
 				archive_game(&ginfo, 'F');

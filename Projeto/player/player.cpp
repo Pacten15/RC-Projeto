@@ -413,7 +413,9 @@ string send_to_tcp_server(string message,string port,string ip)
     size_t message_lenght = message.length();
     const char* port_char = port.c_str();
     const char* ip_char = ip.c_str();
-    errcode=getaddrinfo(ip_char,port_char,&hints,&res);
+	char buffer2[256];
+	gethostname(buffer2, 256);
+    errcode=getaddrinfo(buffer2,port_char,&hints,&res);
     if(errcode!=0){
         printf("erro a obter o endereço");
         exit(1);
