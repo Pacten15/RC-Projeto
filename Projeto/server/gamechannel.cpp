@@ -2,7 +2,8 @@
 
 void init_gamechannel (char* GSport, char* word_file_name) {
 
-	int fd = open_udp_socket(GSport);
+	struct addrinfo* res;
+	int fd = open_udp_socket(GSport, &res);
 
 	int n = -1, len;
 	char buffer[128];
@@ -29,12 +30,13 @@ void init_gamechannel (char* GSport, char* word_file_name) {
 
 	}
 
+	freeaddrinfo(res);
 	close(fd);
 
 	return;
 }
 
-int open_udp_socket (char* GSport) {
+int open_udp_socket (char* GSport, struct addrinfo** r) {
 
 	int fd, errcode;
 	ssize_t n;
@@ -50,8 +52,10 @@ int open_udp_socket (char* GSport) {
     hints.ai_family=AF_INET; // IPv4
     hints.ai_socktype=SOCK_DGRAM; // UDP socket
     hints.ai_flags=AI_PASSIVE;
-    
-    errcode=getaddrinfo(NULL,GSport,&hints,&res);
+
+	char buffer[256];
+	gethostname(buffer, 256);
+    errcode=getaddrinfo(buffer,GSport,&hints,&res);
 	if(errcode!=0) {
 		cout << "Erro no getaddrinfo(" << errcode << "). Abortando." << endl;
 		cout << gai_strerror(errcode) << endl;
@@ -64,7 +68,7 @@ int open_udp_socket (char* GSport) {
         exit(1);
     }
 
-	freeaddrinfo(res);
+	*r = res;
 
 	return fd;
 }

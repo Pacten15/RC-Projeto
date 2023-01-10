@@ -368,7 +368,9 @@ void send_to_udp_server(string message,string port,string ip)
     memset(&hints,0,sizeof hints);
     hints.ai_family=AF_INET; //IPv4
     hints.ai_socktype=SOCK_DGRAM; //UDP socket
-    errcode=getaddrinfo(ip_char,port_char,&hints,&res);
+	char buffer2[256];
+	gethostname(buffer2, 256);
+    errcode=getaddrinfo(buffer2,port_char,&hints,&res);
     if(errcode!=0) /*error*/ exit(1);
     n=sendto(fd,message_char,message_lenght,0,res->ai_addr,res->ai_addrlen);
     if(n==-1) /*error*/ exit(1);

@@ -15,7 +15,7 @@ typedef struct _game_info {
 } game_info;
 
 void init_gamechannel (char*, char*);
-int open_udp_socket (char*);
+int open_udp_socket (char*, struct addrinfo**);
 void process_udp_message (char*, char*);
 void update_game_info (game_info*, int);
 bool check_letter(char*, char);
